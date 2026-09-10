@@ -22,7 +22,7 @@ describe('errorHandler', () => {
 
   it('maps duplicate key error to 409', () => {
     const res = makeRes();
-    errorHandler({ code: 11000, keyValue: { email: 'a@b.com' } }, {}, res, () => {});
+    errorHandler({ code: 11000, keyValue: { email: 'a@b.com' } }, {}, res, () => { });
     expect(res.status).toHaveBeenCalledWith(409);
     expect(res.json.mock.calls[0][0].success).toBe(false);
   });
@@ -33,7 +33,7 @@ describe('errorHandler', () => {
       name: 'ValidationError',
       errors: { email: { message: 'Email is required' }, name: { message: 'Name is required' } },
     };
-    errorHandler(err, {}, res, () => {});
+    errorHandler(err, {}, res, () => { });
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json.mock.calls[0][0].errors).toEqual(
       expect.arrayContaining(['Email is required', 'Name is required'])
@@ -42,13 +42,13 @@ describe('errorHandler', () => {
 
   it('maps CastError to 400', () => {
     const res = makeRes();
-    errorHandler({ name: 'CastError' }, {}, res, () => {});
+    errorHandler({ name: 'CastError' }, {}, res, () => { });
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
   it('maps unknown errors to 500', () => {
     const res = makeRes();
-    errorHandler(new Error('boom'), {}, res, () => {});
+    errorHandler(new Error('boom'), {}, res, () => { });
     expect(res.status).toHaveBeenCalledWith(500);
   });
 });
@@ -67,5 +67,18 @@ describe('validate', () => {
     const res = await request(testApp).post('/t').send({ email: 'not-an-email' });
     expect(res.status).toBe(400);
     expect(res.body.errors).toEqual(['Valid email is required']);
+  });
+});
+
+describe('async error forwarding', () => {
+  it('forwards async handler rejections to errorHandler as a 500 envelope', async () => {
+    const testApp = require('express')();
+    testApp.get('/t', async (req, res) => {
+      throw new Error('async boom');
+    });
+    testApp.use(errorHandler);
+    const res = await request(testApp).get('/t');
+    expect(res.status).toBe(500);
+    expect(res.body.success).toBe(false);
   });
 });
