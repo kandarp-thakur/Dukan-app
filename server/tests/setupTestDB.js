@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 
-module.exports = function setupTestDB() {
+function setupTestDB() {
   let mongoServer;
 
   beforeAll(async () => {
@@ -20,4 +20,6 @@ module.exports = function setupTestDB() {
     await mongoose.disconnect();
     await mongoServer.stop();
   });
-};
+}
+
+module.exports = { setupTestDB };
