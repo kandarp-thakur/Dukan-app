@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema(
     },
     passwordHash: { type: String, required: true },
     role: { type: String, enum: ['owner', 'staff'], default: 'staff' },
+    tokenVersion: { type: Number, default: 0 },
     businessId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Business',
@@ -37,6 +38,7 @@ userSchema.set('toJSON', {
     delete ret._id;
     delete ret.__v;
     delete ret.passwordHash;
+    delete ret.tokenVersion;
     return ret;
   },
 });

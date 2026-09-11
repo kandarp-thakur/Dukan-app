@@ -20,13 +20,19 @@ exports.register = async (req, res) => {
     return res.status(409).json({ success: false, message: 'Email already registered' });
   }
   const business = await Business.create({ name: businessName });
-  const user = await User.create({
-    name,
-    email,
-    password,
-    role: 'owner',
-    businessId: business._id,
-  });
+  let user;
+  try {
+    user = await User.create({
+      name,
+      email,
+      password,
+      role: 'owner',
+      businessId: business._id,
+    });
+  } catch (err) {
+    await Business.deleteOne({ _id: business._id });
+    throw err;
+  }
   setRefreshCookie(res, generateRefreshToken(user));
   return res.status(201).json({
     success: true,
@@ -55,24 +61,37 @@ exports.refresh = async (req, res) => {
   if (!token) {
     return res.status(401).json({ success: false, message: 'No refresh token' });
   }
+  let payload;
   try {
-    const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
-    const user = await User.findById(payload.id);
-    if (!user) {
-      return res.status(401).json({ success: false, message: 'User no longer exists' });
-    }
-    setRefreshCookie(res, generateRefreshToken(user));
-    return res.json({
-      success: true,
-      message: 'Token refreshed',
-      data: { accessToken: generateAccessToken(user) },
-    });
+    payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
   } catch {
     return res.status(401).json({ success: false, message: 'Invalid refresh token' });
   }
+  const user = await User.findById(payload.id);
+  if (!user) {
+    return res.status(401).json({ success: false, message: 'User no longer exists' });
+  }
+  if (user.tokenVersion !== payload.tokenVersion) {
+    return res.status(401).json({ success: false, message: 'Token revoked' });
+  }
+  setRefreshCookie(res, generateRefreshToken(user));
+  return res.json({
+    success: true,
+    message: 'Token refreshed',
+    data: { accessToken: generateAccessToken(user) },
+  });
 };
 
-exports.logout = (req, res) => {
+exports.logout = async (req, res) => {
+  const token = req.cookies ? req.cookies.refreshToken : undefined;
+  if (token) {
+    try {
+      const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+      await User.findByIdAndUpdate(payload.id, { $inc: { tokenVersion: 1 } });
+    } catch {
+      // token already invalid — nothing to revoke
+    }
+  }
   res.clearCookie('refreshToken', { path: '/api/v1/auth' });
   return res.json({ success: true, message: 'Logged out', data: null });
 };

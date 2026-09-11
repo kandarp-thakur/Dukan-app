@@ -1,5 +1,7 @@
 const request = require('supertest');
 const app = require('../src/app');
+const User = require('../src/models/User');
+const Business = require('../src/models/Business');
 const { setupTestDB } = require('./setupTestDB');
 
 setupTestDB();
@@ -33,6 +35,18 @@ describe('POST /api/v1/auth/register', () => {
       .post('/api/v1/auth/register')
       .send({ ...registerPayload, businessName: 'Other Biz', name: 'Other' });
     expect(res.status).toBe(409);
+  });
+
+  it('removes the orphaned business when user creation fails', async () => {
+    await request(app).post('/api/v1/auth/register').send(registerPayload);
+    const findOneSpy = jest.spyOn(User, 'findOne').mockResolvedValue(null);
+    const res = await request(app)
+      .post('/api/v1/auth/register')
+      .send({ ...registerPayload, businessName: 'Orphan Biz', name: 'Other' });
+    findOneSpy.mockRestore();
+    expect(res.status).toBe(409);
+    const orphan = await Business.findOne({ name: 'Orphan Biz' });
+    expect(orphan).toBeNull();
   });
 
   it('returns 400 for missing fields', async () => {
@@ -88,6 +102,16 @@ describe('POST /api/v1/auth/refresh', () => {
     const res = await request(app).post('/api/v1/auth/refresh');
     expect(res.status).toBe(401);
   });
+
+  it('returns 500, not 401, when the user lookup fails', async () => {
+    const reg = await request(app).post('/api/v1/auth/register').send(registerPayload);
+    const cookie = reg.headers['set-cookie'][0];
+    const findByIdSpy = jest.spyOn(User, 'findById').mockRejectedValue(new Error('db down'));
+    const res = await request(app).post('/api/v1/auth/refresh').set('Cookie', cookie);
+    findByIdSpy.mockRestore();
+    expect(res.status).toBe(500);
+    expect(res.body.success).toBe(false);
+  });
 });
 
 describe('POST /api/v1/auth/logout', () => {
@@ -95,6 +119,15 @@ describe('POST /api/v1/auth/logout', () => {
     const res = await request(app).post('/api/v1/auth/logout');
     expect(res.status).toBe(200);
     expect(res.headers['set-cookie'][0]).toContain('refreshToken=;');
+  });
+
+  it('revokes the refresh token so it cannot be reused', async () => {
+    const reg = await request(app).post('/api/v1/auth/register').send(registerPayload);
+    const cookie = reg.headers['set-cookie'][0];
+    const res = await request(app).post('/api/v1/auth/logout').set('Cookie', cookie);
+    expect(res.status).toBe(200);
+    const refreshed = await request(app).post('/api/v1/auth/refresh').set('Cookie', cookie);
+    expect(refreshed.status).toBe(401);
   });
 });
 

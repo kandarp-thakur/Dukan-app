@@ -6,21 +6,22 @@ exports.authenticate = async (req, res, next) => {
   if (!header || !header.startsWith('Bearer ')) {
     return res.status(401).json({ success: false, message: 'Authentication required' });
   }
+  let payload;
   try {
-    const payload = jwt.verify(header.slice(7), process.env.JWT_ACCESS_SECRET);
-    const user = await User.findById(payload.id);
-    if (!user) {
-      return res.status(401).json({ success: false, message: 'User no longer exists' });
-    }
-    req.user = {
-      id: user._id.toString(),
-      role: user.role,
-      businessId: user.businessId.toString(),
-    };
-    next();
+    payload = jwt.verify(header.slice(7), process.env.JWT_ACCESS_SECRET);
   } catch {
     return res.status(401).json({ success: false, message: 'Invalid or expired token' });
   }
+  const user = await User.findById(payload.id);
+  if (!user) {
+    return res.status(401).json({ success: false, message: 'User no longer exists' });
+  }
+  req.user = {
+    id: user._id.toString(),
+    role: user.role,
+    businessId: user.businessId.toString(),
+  };
+  next();
 };
 
 exports.tenantScope = (req, res, next) => {

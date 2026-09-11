@@ -1,7 +1,9 @@
 const express = require('express');
+require('express-async-errors');
 const request = require('supertest');
 const { authenticate, tenantScope, requireRole } = require('../src/middleware/auth');
 const { generateAccessToken } = require('../src/utils/tokens');
+const { errorHandler } = require('../src/middleware/errors');
 const User = require('../src/models/User');
 const Business = require('../src/models/Business');
 const { setupTestDB } = require('./setupTestDB');
@@ -20,6 +22,7 @@ const makeApp = () => {
   app.get('/api/v1/owner-only', authenticate, requireRole('owner'), (req, res) =>
     res.json({ success: true, message: 'OK', data: null })
   );
+  app.use(errorHandler);
   return app;
 };
 
@@ -46,6 +49,18 @@ describe('authenticate', () => {
       .get('/api/v1/whoami')
       .set('Authorization', 'Bearer not-a-real-token');
     expect(res.status).toBe(401);
+  });
+
+  it('returns 500, not 401, when the user lookup fails', async () => {
+    const user = await createUser('owner');
+    const token = generateAccessToken(user);
+    const findByIdSpy = jest.spyOn(User, 'findById').mockRejectedValue(new Error('db down'));
+    const res = await request(makeApp())
+      .get('/api/v1/whoami')
+      .set('Authorization', `Bearer ${token}`);
+    findByIdSpy.mockRestore();
+    expect(res.status).toBe(500);
+    expect(res.body.success).toBe(false);
   });
 
   it('sets req.user and req.businessId for a valid token', async () => {

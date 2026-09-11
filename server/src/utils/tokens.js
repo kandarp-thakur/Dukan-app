@@ -12,4 +12,8 @@ exports.generateAccessToken = (user) =>
   );
 
 exports.generateRefreshToken = (user) =>
-  jwt.sign({ id: user._id.toString() }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
+  jwt.sign(
+    { id: user._id.toString(), tokenVersion: user.tokenVersion },
+    process.env.JWT_REFRESH_SECRET,
+    { expiresIn: '7d' }
+  );
