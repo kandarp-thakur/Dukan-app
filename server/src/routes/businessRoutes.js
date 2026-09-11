@@ -1,7 +1,8 @@
 const express = require('express');
 const { body } = require('express-validator');
 const businessController = require('../controllers/businessController');
-const { authenticate, requireRole } = require('../middleware/auth');
+const planController = require('../controllers/planController');
+const { authenticate, tenantScope, requireRole } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 
 const router = express.Router();
@@ -20,6 +21,16 @@ router.patch(
     .withMessage('GSTIN must be 15 characters'),
   validate,
   businessController.updateBusiness
+);
+
+router.post(
+  '/upgrade-request',
+  authenticate,
+  tenantScope,
+  requireRole('owner'),
+  body('plan').isIn(['free', 'pro']).withMessage('Plan must be free or pro'),
+  validate,
+  planController.requestUpgrade
 );
 
 module.exports = router;

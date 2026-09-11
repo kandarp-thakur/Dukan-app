@@ -13,5 +13,7 @@ router.use('/sales', require('./saleRoutes'));
 router.use('/expenses', require('./expenseRoutes'));
 router.use('/dashboard', require('./dashboardRoutes'));
 router.use('/reports', require('./reportRoutes'));
+router.use('/users', require('./userRoutes'));
+router.use('/plans', require('./planRoutes'));
 
 module.exports = router;
