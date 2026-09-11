@@ -3,7 +3,9 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AppShell from './components/AppShell';
-import PlaceholderPage from './components/PlaceholderPage';
+import Staff from './pages/Staff';
+import Settings from './pages/Settings';
+import Subscription from './pages/Subscription';
 import Products from './pages/Products';
 import Customers from './pages/Customers';
 import CustomerDetail from './pages/CustomerDetail';
@@ -40,9 +42,9 @@ function ProtectedRoutes() {
         <Route path="/suppliers/:id" element={<SupplierDetail />} />
         <Route path="/products" element={<Products />} />
         <Route path="/reports" element={<Reports />} />
-        <Route path="/staff" element={<PlaceholderPage title="Staff" />} />
-        <Route path="/settings" element={<PlaceholderPage title="Settings" />} />
-        <Route path="/subscription" element={<PlaceholderPage title="Subscription" />} />
+        <Route path="/staff" element={<Staff />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/subscription" element={<Subscription />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Route>
     </Routes>
