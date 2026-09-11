@@ -23,7 +23,7 @@ const productSchema = new mongoose.Schema(
         stockQty: { type: Number, default: 0, min: 0 },
         lowStockThreshold: { type: Number, default: 5, min: 0 },
     },
-    { timestamps: true, toJSON: { virtuals: true } }
+    { timestamps: true }
 );
 
 productSchema.virtual('lowStock').get(function () {
@@ -31,6 +31,7 @@ productSchema.virtual('lowStock').get(function () {
 });
 
 productSchema.set('toJSON', {
+    virtuals: true,
     transform: (doc, ret) => {
         ret.id = ret._id.toString();
         delete ret._id;
