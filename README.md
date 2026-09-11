@@ -1,12 +1,12 @@
 # Acc App — Business Accounting SaaS
 
 Multi-tenant MERN app for small Indian businesses: sales, expenses, customer khata,
-suppliers, inventory, invoices, and reports with a light-green glassmorphism UI.
+suppliers, inventory, invoices, and reports with a rich light-green glassmorphism UI.
 
 ## Stack
 
 - **Server:** Node.js, Express, MongoDB (Mongoose), JWT auth (access + refresh tokens)
-- **Client:** React 18 (Vite), Tailwind CSS, React Router, axios, Recharts (later phase)
+- **Client:** React 18 (Vite), Tailwind CSS, React Router, axios, lucide-react icons
 
 ## Setup
 
@@ -20,9 +20,17 @@ suppliers, inventory, invoices, and reports with a light-green glassmorphism UI.
 - `npm run test:server` — Jest + Supertest + in-memory MongoDB
 - `npm run test:client` — Vitest + React Testing Library
 
-## Architecture
+## Documentation
 
-See `docs/superpowers/specs/2026-09-10-business-accounting-saas-design.md`.
+Read [`docs/brain.md`](docs/brain.md) first — it is the master project context
+(what the app is, decisions, layout, current state, roadmap).
+
+| Doc | Covers |
+|---|---|
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | System architecture, multi-tenancy, data model, request lifecycle |
+| [`docs/API.md`](docs/API.md) | Full REST API reference |
+| [`docs/ui-style-guide.md`](docs/ui-style-guide.md) | Glass design system: colors, tokens, component classes, recipes |
+| [`docs/superpowers/specs/`](docs/superpowers/specs/) | Design specs (product + UI redesign) and implementation plans |
 
 Multi-tenancy: every business document carries `businessId`; the `authenticate` →
 `tenantScope` → `requireRole` middleware chain scopes all queries to the caller's
