@@ -12,6 +12,8 @@ import SupplierDetail from './pages/SupplierDetail';
 import Sales from './pages/Sales';
 import SaleDetail from './pages/SaleDetail';
 import Expenses from './pages/Expenses';
+import Dashboard from './pages/Dashboard';
+import Reports from './pages/Reports';
 
 function ProtectedRoutes() {
   const { user, loading } = useAuth();
@@ -28,7 +30,7 @@ function ProtectedRoutes() {
   return (
     <Routes>
       <Route element={<AppShell />}>
-        <Route path="/dashboard" element={<PlaceholderPage title="Dashboard" />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/sales" element={<Sales />} />
         <Route path="/sales/:id" element={<SaleDetail />} />
         <Route path="/expenses" element={<Expenses />} />
@@ -37,7 +39,7 @@ function ProtectedRoutes() {
         <Route path="/suppliers" element={<Suppliers />} />
         <Route path="/suppliers/:id" element={<SupplierDetail />} />
         <Route path="/products" element={<Products />} />
-        <Route path="/reports" element={<PlaceholderPage title="Reports" />} />
+        <Route path="/reports" element={<Reports />} />
         <Route path="/staff" element={<PlaceholderPage title="Staff" />} />
         <Route path="/settings" element={<PlaceholderPage title="Settings" />} />
         <Route path="/subscription" element={<PlaceholderPage title="Subscription" />} />
