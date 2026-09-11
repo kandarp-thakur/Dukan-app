@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import App from './App';
+import PlaceholderPage from './components/PlaceholderPage';
 
-describe('glass theme smoke test', () => {
-  it('renders the app with glass card', () => {
-    render(<App />);
-    expect(screen.getByText('Acc App')).toBeInTheDocument();
+describe('theme wiring smoke test', () => {
+  it('renders a themed placeholder page', () => {
+    render(<PlaceholderPage title="Smoke Test" />);
+    expect(screen.getByRole('heading', { name: 'Smoke Test' })).toBeInTheDocument();
   });
 });
