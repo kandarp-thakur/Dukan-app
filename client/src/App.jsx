@@ -9,6 +9,9 @@ import Customers from './pages/Customers';
 import CustomerDetail from './pages/CustomerDetail';
 import Suppliers from './pages/Suppliers';
 import SupplierDetail from './pages/SupplierDetail';
+import Sales from './pages/Sales';
+import SaleDetail from './pages/SaleDetail';
+import Expenses from './pages/Expenses';
 
 function ProtectedRoutes() {
   const { user, loading } = useAuth();
@@ -26,8 +29,9 @@ function ProtectedRoutes() {
     <Routes>
       <Route element={<AppShell />}>
         <Route path="/dashboard" element={<PlaceholderPage title="Dashboard" />} />
-        <Route path="/sales" element={<PlaceholderPage title="Sales" />} />
-        <Route path="/expenses" element={<PlaceholderPage title="Expenses" />} />
+        <Route path="/sales" element={<Sales />} />
+        <Route path="/sales/:id" element={<SaleDetail />} />
+        <Route path="/expenses" element={<Expenses />} />
         <Route path="/customers" element={<Customers />} />
         <Route path="/customers/:id" element={<CustomerDetail />} />
         <Route path="/suppliers" element={<Suppliers />} />
