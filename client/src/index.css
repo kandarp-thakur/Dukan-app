@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-app-gradient min-h-screen text-gray-800 antialiased;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-white/60 backdrop-blur-xl border border-white/40 shadow-glass rounded-2xl;
+  }
+  .glass-input {
+    @apply w-full rounded-xl border border-white/60 bg-white/70 px-4 py-2.5 text-gray-800 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30;
+  }
+  .btn-primary {
+    @apply rounded-xl bg-primary px-4 py-2.5 font-semibold text-white shadow-glass transition-colors hover:bg-accent;
+  }
+}
