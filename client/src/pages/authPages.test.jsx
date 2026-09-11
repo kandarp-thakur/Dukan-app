@@ -1,0 +1,66 @@
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import Login from './Login';
+import Register from './Register';
+
+const mockLogin = vi.fn().mockResolvedValue(undefined);
+const mockRegister = vi.fn().mockResolvedValue(undefined);
+
+vi.mock('../context/AuthContext', () => ({
+  useAuth: () => ({ login: mockLogin, register: mockRegister }),
+}));
+
+describe('Login', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('renders labeled fields and submits credentials', async () => {
+    render(
+      <MemoryRouter>
+        <Login />
+      </MemoryRouter>
+    );
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'o@test.com' } });
+    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'secret123' } });
+    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    await waitFor(() => expect(mockLogin).toHaveBeenCalledWith('o@test.com', 'secret123'));
+  });
+
+  it('shows server error message on failure', async () => {
+    mockLogin.mockRejectedValueOnce({ response: { data: { message: 'Invalid email or password' } } });
+    render(
+      <MemoryRouter>
+        <Login />
+      </MemoryRouter>
+    );
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'o@test.com' } });
+    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'wrongpass' } });
+    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    expect(await screen.findByText('Invalid email or password')).toBeInTheDocument();
+  });
+});
+
+describe('Register', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('renders labeled fields and submits registration payload', async () => {
+    render(
+      <MemoryRouter>
+        <Register />
+      </MemoryRouter>
+    );
+    fireEvent.change(screen.getByLabelText(/business name/i), { target: { value: 'My Shop' } });
+    fireEvent.change(screen.getByLabelText('Your name'), { target: { value: 'Shubham' } });
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 's@test.com' } });
+    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'secret123' } });
+    fireEvent.click(screen.getByRole('button', { name: /create account/i }));
+    await waitFor(() =>
+      expect(mockRegister).toHaveBeenCalledWith({
+        businessName: 'My Shop',
+        name: 'Shubham',
+        email: 's@test.com',
+        password: 'secret123',
+      })
+    );
+  });
+});
