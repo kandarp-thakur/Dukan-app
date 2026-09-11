@@ -4,6 +4,11 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import AppShell from './components/AppShell';
 import PlaceholderPage from './components/PlaceholderPage';
+import Products from './pages/Products';
+import Customers from './pages/Customers';
+import CustomerDetail from './pages/CustomerDetail';
+import Suppliers from './pages/Suppliers';
+import SupplierDetail from './pages/SupplierDetail';
 
 function ProtectedRoutes() {
   const { user, loading } = useAuth();
@@ -23,9 +28,11 @@ function ProtectedRoutes() {
         <Route path="/dashboard" element={<PlaceholderPage title="Dashboard" />} />
         <Route path="/sales" element={<PlaceholderPage title="Sales" />} />
         <Route path="/expenses" element={<PlaceholderPage title="Expenses" />} />
-        <Route path="/customers" element={<PlaceholderPage title="Customers" />} />
-        <Route path="/suppliers" element={<PlaceholderPage title="Suppliers" />} />
-        <Route path="/products" element={<PlaceholderPage title="Products" />} />
+        <Route path="/customers" element={<Customers />} />
+        <Route path="/customers/:id" element={<CustomerDetail />} />
+        <Route path="/suppliers" element={<Suppliers />} />
+        <Route path="/suppliers/:id" element={<SupplierDetail />} />
+        <Route path="/products" element={<Products />} />
         <Route path="/reports" element={<PlaceholderPage title="Reports" />} />
         <Route path="/staff" element={<PlaceholderPage title="Staff" />} />
         <Route path="/settings" element={<PlaceholderPage title="Settings" />} />
