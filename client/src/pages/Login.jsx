@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { LogIn } from 'lucide-react';
 
 export default function Login() {
   const { login } = useAuth();
@@ -26,8 +27,15 @@ export default function Login() {
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <div className="glass w-full max-w-md p-8">
-        <h1 className="text-2xl font-bold text-primary">Welcome back</h1>
-        <p className="mt-1 text-sm text-gray-600">Sign in to your business account</p>
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent text-white shadow-btn-glow">
+            <LogIn size={24} />
+          </span>
+          <div>
+            <h1 className="text-2xl font-bold text-primary">Welcome back</h1>
+            <p className="text-sm text-gray-600">Sign in to your business account</p>
+          </div>
+        </div>
         {error && (
           <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600">
             {error}

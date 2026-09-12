@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { UserPlus } from 'lucide-react';
 
 export default function Register() {
   const { register } = useAuth();
@@ -30,8 +31,15 @@ export default function Register() {
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <div className="glass w-full max-w-md p-8">
-        <h1 className="text-2xl font-bold text-primary">Create your account</h1>
-        <p className="mt-1 text-sm text-gray-600">Set up your business in under a minute</p>
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent text-white shadow-btn-glow">
+            <UserPlus size={24} />
+          </span>
+          <div>
+            <h1 className="text-2xl font-bold text-primary">Create your account</h1>
+            <p className="text-sm text-gray-600">Set up your business in under a minute</p>
+          </div>
+        </div>
         {error && (
           <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600">
             {error}

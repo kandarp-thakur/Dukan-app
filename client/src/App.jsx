@@ -22,7 +22,10 @@ function ProtectedRoutes() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="glass px-8 py-4 font-medium text-primary">Loading…</div>
+        <div className="glass w-full max-w-md p-8">
+          <div className="skeleton h-9 w-44" />
+          <div className="skeleton mt-4 h-4 w-60" />
+        </div>
       </div>
     );
   }
