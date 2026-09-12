@@ -3,6 +3,7 @@ import { expensesApi } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
 import { formatINR, rupeesToPaise } from '../utils/money';
 import { formatDate } from '../utils/format';
+import { Wallet } from 'lucide-react';
 
 const CATEGORIES = ['rent', 'salary', 'stock', 'transport', 'electricity', 'other'];
 
@@ -70,7 +71,12 @@ export default function Expenses() {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold text-primary">Expenses</h1>
+            <h1 className="flex items-center gap-3 text-2xl font-bold text-primary">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/60">
+                    <Wallet size={24} className="text-primary" />
+                </span>
+                Expenses
+            </h1>
             {error && (
                 <div className="glass px-4 py-3 text-sm font-medium text-red-600">{error}</div>
             )}
@@ -134,36 +140,48 @@ export default function Expenses() {
             </div>
             <div className="glass overflow-x-auto p-6">
                 {loading ? (
-                    <p className="text-sm text-gray-500">Loading expenses…</p>
+                    <div className="space-y-2">
+                        {[0, 1, 2].map((i) => (
+                            <div key={i} className="skeleton h-10" />
+                        ))}
+                    </div>
                 ) : expenses.length === 0 ? (
-                    <p className="text-sm text-gray-500">No expenses yet. Add your first expense above.</p>
+                    <div className="empty-state">
+                        <span className="rounded-full bg-white/60 p-3">
+                            <Wallet size={28} className="text-primary" />
+                        </span>
+                        <p className="font-semibold">No expenses yet</p>
+                        <p className="text-sm text-gray-500">Add your first expense above.</p>
+                    </div>
                 ) : (
-                    <table className="w-full text-sm">
+                    <table className="glass-table">
                         <thead>
-                            <tr className="text-left text-xs uppercase tracking-wide text-gray-500">
-                                <th className="pb-3">Date</th>
-                                <th className="pb-3">Category</th>
-                                <th className="pb-3">Note</th>
-                                <th className="pb-3">Payment</th>
-                                <th className="pb-3 text-right">Amount</th>
-                                {isOwner && <th className="pb-3 text-right">Actions</th>}
+                            <tr>
+                                <th>Date</th>
+                                <th>Category</th>
+                                <th>Note</th>
+                                <th>Payment</th>
+                                <th className="text-right">Amount</th>
+                                {isOwner && <th className="text-right">Actions</th>}
                             </tr>
                         </thead>
                         <tbody>
                             {expenses.map((e) => (
-                                <tr key={e.id} className="border-t border-white/50">
-                                    <td className="py-3 text-gray-500">{formatDate(e.date)}</td>
-                                    <td className="py-3 font-medium">{e.category}</td>
-                                    <td className="py-3 text-gray-500">{e.note || '—'}</td>
-                                    <td className="py-3">{e.paymentMethod}</td>
-                                    <td className="py-3 text-right font-semibold text-red-600">
+                                <tr key={e.id}>
+                                    <td className="text-gray-500">{formatDate(e.date)}</td>
+                                    <td className="font-medium">{e.category}</td>
+                                    <td className="text-gray-500">{e.note || '—'}</td>
+                                    <td>
+                                        <span className="badge badge-neutral">{e.paymentMethod}</span>
+                                    </td>
+                                    <td className="text-right font-semibold text-red-600">
                                         {formatINR(e.amount)}
                                     </td>
                                     {isOwner && (
-                                        <td className="py-3 text-right">
+                                        <td className="text-right">
                                             <button
                                                 onClick={() => handleDelete(e.id)}
-                                                className="rounded-lg px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50"
+                                                className="btn-danger px-3 py-1.5 text-xs"
                                             >
                                                 Delete
                                             </button>

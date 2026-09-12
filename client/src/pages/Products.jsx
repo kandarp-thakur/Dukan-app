@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { productsApi } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
 import { formatINR, paiseToRupees, rupeesToPaise } from '../utils/money';
+import { Package } from 'lucide-react';
 
 const EMPTY_FORM = {
     name: '',
@@ -102,7 +103,12 @@ export default function Products() {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold text-primary">Products</h1>
+            <h1 className="flex items-center gap-3 text-2xl font-bold text-primary">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/60">
+                    <Package size={24} className="text-primary" />
+                </span>
+                Products
+            </h1>
             {error && (
                 <div className="glass px-4 py-3 text-sm font-medium text-red-600">{error}</div>
             )}
@@ -183,11 +189,7 @@ export default function Products() {
                             {editingId ? 'Save changes' : 'Add product'}
                         </button>
                         {editingId && (
-                            <button
-                                type="button"
-                                onClick={cancelEdit}
-                                className="rounded-xl px-4 py-2.5 font-semibold text-gray-600 hover:bg-white/70"
-                            >
+                            <button type="button" onClick={cancelEdit} className="btn-ghost">
                                 Cancel
                             </button>
                         )}
@@ -196,50 +198,58 @@ export default function Products() {
             </div>
             <div className="glass overflow-x-auto p-6">
                 {loading ? (
-                    <p className="text-sm text-gray-500">Loading products…</p>
+                    <div className="space-y-2">
+                        {[0, 1, 2].map((i) => (
+                            <div key={i} className="skeleton h-10" />
+                        ))}
+                    </div>
                 ) : products.length === 0 ? (
-                    <p className="text-sm text-gray-500">No products yet. Add your first product above.</p>
+                    <div className="empty-state">
+                        <span className="rounded-full bg-white/60 p-3">
+                            <Package size={28} className="text-primary" />
+                        </span>
+                        <p className="font-semibold">No products yet</p>
+                        <p className="text-sm text-gray-500">Add your first product above.</p>
+                    </div>
                 ) : (
-                    <table className="w-full text-sm">
+                    <table className="glass-table">
                         <thead>
-                            <tr className="text-left text-xs uppercase tracking-wide text-gray-500">
-                                <th className="pb-3">Name</th>
-                                <th className="pb-3">SKU</th>
-                                <th className="pb-3">Purchase</th>
-                                <th className="pb-3">Selling</th>
-                                <th className="pb-3">Stock</th>
-                                <th className="pb-3">Actions</th>
+                            <tr>
+                                <th>Name</th>
+                                <th>SKU</th>
+                                <th>Purchase</th>
+                                <th>Selling</th>
+                                <th>Stock</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {products.map((p) => {
                                 const low = p.lowStock ?? p.stockQty <= (p.lowStockThreshold ?? 5);
                                 return (
-                                    <tr key={p.id} className="border-t border-white/50">
-                                        <td className="py-3 font-medium">{p.name}</td>
-                                        <td className="py-3 text-gray-500">{p.sku || '—'}</td>
-                                        <td className="py-3">{formatINR(p.purchasePrice)}</td>
-                                        <td className="py-3">{formatINR(p.sellingPrice)}</td>
-                                        <td className="py-3">
+                                    <tr key={p.id}>
+                                        <td className="font-medium">{p.name}</td>
+                                        <td className="text-gray-500">{p.sku || '—'}</td>
+                                        <td>{formatINR(p.purchasePrice)}</td>
+                                        <td>{formatINR(p.sellingPrice)}</td>
+                                        <td>
                                             {p.stockQty}
                                             {low && (
-                                                <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">
-                                                    Low stock
-                                                </span>
+                                                <span className="badge badge-warning ml-2">Low stock</span>
                                             )}
                                         </td>
-                                        <td className="py-3">
+                                        <td>
                                             <div className="flex gap-2">
                                                 <button
                                                     onClick={() => startEdit(p)}
-                                                    className="rounded-lg px-3 py-1.5 text-xs font-semibold text-primary hover:bg-white/70"
+                                                    className="btn-ghost px-3 py-1.5 text-xs"
                                                 >
                                                     Edit
                                                 </button>
                                                 {isOwner && (
                                                     <button
                                                         onClick={() => handleDelete(p.id)}
-                                                        className="rounded-lg px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50"
+                                                        className="btn-danger px-3 py-1.5 text-xs"
                                                     >
                                                         Delete
                                                     </button>
