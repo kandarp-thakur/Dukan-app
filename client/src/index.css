@@ -4,18 +4,83 @@
 
 @layer base {
   body {
-    @apply bg-app-gradient min-h-screen text-gray-800 antialiased;
+    @apply min-h-screen text-gray-800 antialiased;
+    background-color: #E8F5E9;
+    background-image:
+      radial-gradient(ellipse 60% 50% at 15% 10%, rgba(76, 175, 80, 0.20), transparent 70%),
+      radial-gradient(ellipse 50% 45% at 90% 50%, rgba(64, 140, 255, 0.14), transparent 70%),
+      radial-gradient(ellipse 55% 45% at 10% 90%, rgba(167, 139, 250, 0.14), transparent 70%),
+      radial-gradient(ellipse 50% 40% at 85% 90%, rgba(77, 208, 190, 0.12), transparent 70%),
+      linear-gradient(135deg, #E8F5E9 0%, #F1F8F2 100%);
+    background-attachment: fixed;
   }
 }
 
 @layer components {
   .glass {
-    @apply bg-white/60 backdrop-blur-xl border border-white/40 shadow-glass rounded-2xl;
+    @apply rounded-2xl border border-white/60 bg-white/55 shadow-glass backdrop-blur-xl;
+  }
+  .glass-card {
+    @apply block rounded-2xl border border-white/60 bg-white/55 shadow-glass backdrop-blur-xl transition duration-200;
+  }
+  .glass-card:hover {
+    @apply bg-white/70 shadow-glass-lg;
   }
   .glass-input {
-    @apply w-full rounded-xl border border-white/60 bg-white/70 px-4 py-2.5 text-gray-800 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30;
+    @apply w-full rounded-xl border border-white/70 bg-white/70 px-4 py-2.5 text-gray-800 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30;
   }
   .btn-primary {
-    @apply rounded-xl bg-primary px-4 py-2.5 font-semibold text-white shadow-glass transition-colors hover:bg-accent;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-primary to-accent px-4 py-2.5 font-semibold text-white shadow-btn-glow transition;
+  }
+  .btn-primary:hover {
+    @apply brightness-110;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-white/60 px-4 py-2.5 font-semibold text-primary transition;
+  }
+  .btn-ghost:hover {
+    @apply bg-white/60;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-red-500/90 px-4 py-2.5 font-semibold text-white transition;
+  }
+  .btn-danger:hover {
+    @apply bg-red-500;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+  .badge-success {
+    @apply bg-green-100/80 text-green-700;
+  }
+  .badge-danger {
+    @apply bg-red-100/80 text-red-700;
+  }
+  .badge-warning {
+    @apply bg-amber-100/80 text-amber-700;
+  }
+  .badge-neutral {
+    @apply bg-white/60 text-gray-600;
+  }
+  .skeleton {
+    @apply animate-pulse rounded-xl bg-white/50;
+  }
+  .empty-state {
+    @apply flex flex-col items-center gap-2 py-10 text-center;
+  }
+  .glass-table {
+    @apply w-full text-sm;
+  }
+  .glass-table thead th {
+    @apply bg-white/40 pb-3 text-left text-xs uppercase tracking-wide text-gray-500;
+  }
+  .glass-table tbody tr {
+    @apply border-t border-white/50;
+  }
+  .glass-table tbody tr:hover {
+    @apply bg-white/40;
+  }
+  .glass-table tbody td {
+    @apply py-3;
   }
 }
