@@ -460,28 +460,28 @@ git add client/src/components/AppShell.jsx client/src/theme.test.jsx client/src/
 Replace:
 
 ```jsx
-    if (loading) {
-      return (
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="glass px-8 py-4 font-medium text-primary">Loading…</div>
-        </div>
-      );
-    }
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="glass px-8 py-4 font-medium text-primary">Loading…</div>
+      </div>
+    );
+  }
 ```
 
 With:
 
 ```jsx
-    if (loading) {
-      return (
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="glass w-full max-w-md p-8">
-            <div className="skeleton h-9 w-44" />
-            <div className="skeleton mt-4 h-4 w-60" />
-          </div>
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="glass w-full max-w-md p-8">
+          <div className="skeleton h-9 w-44" />
+          <div className="skeleton mt-4 h-4 w-60" />
         </div>
-      );
-    }
+      </div>
+    );
+  }
 ```
 
 - [ ] **Step 2: In `client/src/pages/Login.jsx`, add the icon import and replace the header**
@@ -2555,103 +2555,103 @@ With:
 Replace:
 
 ```jsx
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="border-b border-gray-200 text-left text-xs uppercase text-gray-400">
-                                <th className="pb-2">Name</th>
-                                <th className="pb-2">Email</th>
-                                <th className="pb-2">Role</th>
-                                <th className="pb-2 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {users.map((u) => (
-                                <tr key={u.id} className="border-b border-gray-100">
-                                    <td className="py-2 font-medium text-gray-800">
-                                        {u.name}
-                                        {u.id === user?.id && <span className="ml-1 text-xs text-gray-400">(you)</span>}
-                                    </td>
-                                    <td className="py-2 text-gray-500">{u.email}</td>
-                                    <td className="py-2">
-                                        <label htmlFor={`role-${u.id}`} className="sr-only">
-                                            Role for {u.name}
-                                        </label>
-                                        <select
-                                            id={`role-${u.id}`}
-                                            value={u.role}
-                                            onChange={(e) => handleRole(u.id, e.target.value)}
-                                            className="glass-input py-1"
+                <table className="w-full text-sm">
+                    <thead>
+                        <tr className="border-b border-gray-200 text-left text-xs uppercase text-gray-400">
+                            <th className="pb-2">Name</th>
+                            <th className="pb-2">Email</th>
+                            <th className="pb-2">Role</th>
+                            <th className="pb-2 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {users.map((u) => (
+                            <tr key={u.id} className="border-b border-gray-100">
+                                <td className="py-2 font-medium text-gray-800">
+                                    {u.name}
+                                    {u.id === user?.id && <span className="ml-1 text-xs text-gray-400">(you)</span>}
+                                </td>
+                                <td className="py-2 text-gray-500">{u.email}</td>
+                                <td className="py-2">
+                                    <label htmlFor={`role-${u.id}`} className="sr-only">
+                                        Role for {u.name}
+                                    </label>
+                                    <select
+                                        id={`role-${u.id}`}
+                                        value={u.role}
+                                        onChange={(e) => handleRole(u.id, e.target.value)}
+                                        className="glass-input py-1"
+                                    >
+                                        <option value="staff">staff</option>
+                                        <option value="owner">owner</option>
+                                    </select>
+                                </td>
+                                <td className="py-2 text-right">
+                                    {u.id !== user?.id && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemove(u.id)}
+                                            className="text-sm font-semibold text-red-600 hover:underline"
                                         >
-                                            <option value="staff">staff</option>
-                                            <option value="owner">owner</option>
-                                        </select>
-                                    </td>
-                                    <td className="py-2 text-right">
-                                        {u.id !== user?.id && (
-                                            <button
-                                                type="button"
-                                                onClick={() => handleRemove(u.id)}
-                                                className="text-sm font-semibold text-red-600 hover:underline"
-                                            >
-                                                Remove
-                                            </button>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                            Remove
+                                        </button>
+                                    )}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
 ```
 
 With:
 
 ```jsx
-                    <table className="glass-table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th className="text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {users.map((u) => (
-                                <tr key={u.id}>
-                                    <td className="font-medium text-gray-800">
-                                        {u.name}
-                                        {u.id === user?.id && <span className="ml-1 text-xs text-gray-400">(you)</span>}
-                                    </td>
-                                    <td className="text-gray-500">{u.email}</td>
-                                    <td>
-                                        <label htmlFor={`role-${u.id}`} className="sr-only">
-                                            Role for {u.name}
-                                        </label>
-                                        <select
-                                            id={`role-${u.id}`}
-                                            value={u.role}
-                                            onChange={(e) => handleRole(u.id, e.target.value)}
-                                            className="glass-input py-1"
+                <table className="glass-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th className="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {users.map((u) => (
+                            <tr key={u.id}>
+                                <td className="font-medium text-gray-800">
+                                    {u.name}
+                                    {u.id === user?.id && <span className="ml-1 text-xs text-gray-400">(you)</span>}
+                                </td>
+                                <td className="text-gray-500">{u.email}</td>
+                                <td>
+                                    <label htmlFor={`role-${u.id}`} className="sr-only">
+                                        Role for {u.name}
+                                    </label>
+                                    <select
+                                        id={`role-${u.id}`}
+                                        value={u.role}
+                                        onChange={(e) => handleRole(u.id, e.target.value)}
+                                        className="glass-input py-1"
+                                    >
+                                        <option value="staff">staff</option>
+                                        <option value="owner">owner</option>
+                                    </select>
+                                </td>
+                                <td className="text-right">
+                                    {u.id !== user?.id && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemove(u.id)}
+                                            className="btn-danger px-3 py-1.5 text-xs"
                                         >
-                                            <option value="staff">staff</option>
-                                            <option value="owner">owner</option>
-                                        </select>
-                                    </td>
-                                    <td className="text-right">
-                                        {u.id !== user?.id && (
-                                            <button
-                                                type="button"
-                                                onClick={() => handleRemove(u.id)}
-                                                className="btn-danger px-3 py-1.5 text-xs"
-                                            >
-                                                Remove
-                                            </button>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                            Remove
+                                        </button>
+                                    )}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
 ```
 
 Leave the add-staff form, error, and notice blocks exactly as they are.
