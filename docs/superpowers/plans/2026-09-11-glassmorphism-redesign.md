@@ -1172,7 +1172,7 @@ Leave the "Add expense" form and error block exactly as they are.
 
 - [ ] **Step 4: In `client/src/pages/Products.jsx`, add the icon import**
 
-After the existing `import { formatDate } from '../utils/format';` line add:
+After the existing `import { formatINR, paiseToRupees, rupeesToPaise } from '../utils/money';` line add:
 
 ```jsx
 import { Package } from 'lucide-react';
