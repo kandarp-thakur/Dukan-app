@@ -17,4 +17,26 @@ describe('theme wiring smoke test', () => {
     expect(screen.getAllByText('My Business').length).toBeGreaterThan(0);
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
   });
+
+  it('renders the glass sidebar with lucide svg icons', () => {
+    render(
+      <MemoryRouter>
+        <AppShell />
+      </MemoryRouter>
+    );
+    const sidebar = document.querySelector('aside');
+    expect(sidebar).not.toBeNull();
+    expect(sidebar.className).toContain('glass');
+    expect(sidebar.querySelectorAll('svg').length).toBeGreaterThan(0);
+  });
+
+  it('renders the plan chip as a badge', () => {
+    render(
+      <MemoryRouter>
+        <AppShell />
+      </MemoryRouter>
+    );
+    const chip = screen.getByText('Free plan');
+    expect(chip.className).toContain('badge');
+  });
 });

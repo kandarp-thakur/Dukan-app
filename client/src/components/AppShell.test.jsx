@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import AppShell from './AppShell';
@@ -43,11 +43,12 @@ describe('AppShell', () => {
   it('hides owner-only nav items for staff', () => {
     mockAuth.user = { role: 'staff', name: 'Staff' };
     renderShell();
-    expect(screen.getByText('Sales')).toBeInTheDocument();
-    expect(screen.queryByText('Reports')).toBeNull();
-    expect(screen.queryByText('Staff')).toBeNull();
-    expect(screen.queryByText('Settings')).toBeNull();
-    expect(screen.queryByText('Subscription')).toBeNull();
+    const nav = screen.getByRole('navigation');
+    expect(within(nav).getByText('Sales')).toBeInTheDocument();
+    expect(within(nav).queryByText('Reports')).toBeNull();
+    expect(within(nav).queryByText('Staff')).toBeNull();
+    expect(within(nav).queryByText('Settings')).toBeNull();
+    expect(within(nav).queryByText('Subscription')).toBeNull();
     mockAuth.user = { role: 'owner', name: 'Owner' };
   });
 });
