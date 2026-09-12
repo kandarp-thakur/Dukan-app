@@ -5,6 +5,7 @@ import { salesApi } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
 import { formatINR, amountToWords } from '../utils/money';
 import { formatDate } from '../utils/format';
+import { Receipt } from 'lucide-react';
 
 export default function SaleDetail() {
     const { id } = useParams();
@@ -40,7 +41,12 @@ export default function SaleDetail() {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between print:hidden">
-                <h1 className="text-2xl font-bold text-primary">Invoice</h1>
+                <h1 className="flex items-center gap-3 text-2xl font-bold text-primary">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/60">
+                        <Receipt size={24} className="text-primary" />
+                    </span>
+                    Invoice
+                </h1>
                 <div className="flex items-center gap-4">
                     <Link to="/sales" className="text-sm font-semibold text-primary hover:underline">
                         ← Back to sales
@@ -56,7 +62,10 @@ export default function SaleDetail() {
                 <div className="glass px-4 py-3 text-sm font-medium text-red-600">{error}</div>
             )}
             {loading ? (
-                <p className="text-sm text-gray-500">Loading invoice…</p>
+                <div className="glass mx-auto max-w-3xl p-10">
+                    <div className="skeleton h-8 w-48" />
+                    <div className="skeleton mt-6 h-40" />
+                </div>
             ) : (
                 sale && (
                     <div ref={printRef} className="glass mx-auto max-w-3xl bg-white p-10 print:p-0">

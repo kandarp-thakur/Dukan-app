@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { salesApi, customersApi } from '../api/endpoints';
 import { formatINR, rupeesToPaise } from '../utils/money';
 import { formatDate } from '../utils/format';
+import { Receipt } from 'lucide-react';
 
 const EMPTY_ITEM = { name: '', qty: '', rate: '' };
 
@@ -93,7 +94,12 @@ export default function Sales() {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold text-primary">Sales</h1>
+            <h1 className="flex items-center gap-3 text-2xl font-bold text-primary">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/60">
+                    <Receipt size={24} className="text-primary" />
+                </span>
+                Sales
+            </h1>
             {error && (
                 <div className="glass px-4 py-3 text-sm font-medium text-red-600">{error}</div>
             )}
@@ -197,26 +203,36 @@ export default function Sales() {
             </div>
             <div className="glass overflow-x-auto p-6">
                 {loading ? (
-                    <p className="text-sm text-gray-500">Loading sales…</p>
+                    <div className="space-y-2">
+                        {[0, 1, 2].map((i) => (
+                            <div key={i} className="skeleton h-10" />
+                        ))}
+                    </div>
                 ) : sales.length === 0 ? (
-                    <p className="text-sm text-gray-500">No sales yet. Record your first sale above.</p>
+                    <div className="empty-state">
+                        <span className="rounded-full bg-white/60 p-3">
+                            <Receipt size={28} className="text-primary" />
+                        </span>
+                        <p className="font-semibold">No sales yet</p>
+                        <p className="text-sm text-gray-500">Record your first sale above.</p>
+                    </div>
                 ) : (
-                    <table className="w-full text-sm">
+                    <table className="glass-table">
                         <thead>
-                            <tr className="text-left text-xs uppercase tracking-wide text-gray-500">
-                                <th className="pb-3">Invoice</th>
-                                <th className="pb-3">Date</th>
-                                <th className="pb-3">Items</th>
-                                <th className="pb-3">Payment</th>
-                                <th className="pb-3">Status</th>
-                                <th className="pb-3 text-right">Total</th>
-                                <th className="pb-3 text-right">Actions</th>
+                            <tr>
+                                <th>Invoice</th>
+                                <th>Date</th>
+                                <th>Items</th>
+                                <th>Payment</th>
+                                <th>Status</th>
+                                <th className="text-right">Total</th>
+                                <th className="text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {sales.map((s) => (
-                                <tr key={s.id} className="border-t border-white/50">
-                                    <td className="py-3 font-medium">
+                                <tr key={s.id}>
+                                    <td className="font-medium">
                                         <Link
                                             to={`/sales/${s.id}`}
                                             className="text-primary hover:underline"
@@ -224,36 +240,35 @@ export default function Sales() {
                                             {s.invoiceNumber}
                                         </Link>
                                     </td>
-                                    <td className="py-3 text-gray-500">{formatDate(s.date)}</td>
-                                    <td className="py-3 text-gray-500">
+                                    <td className="text-gray-500">{formatDate(s.date)}</td>
+                                    <td className="text-gray-500">
                                         {s.items.map((it) => `${it.name} × ${it.qty}`).join(', ')}
                                     </td>
-                                    <td className="py-3">{s.paymentMethod}</td>
-                                    <td className="py-3">
+                                    <td>
+                                        <span className="badge badge-neutral">{s.paymentMethod}</span>
+                                    </td>
+                                    <td>
                                         <span
-                                            className={`rounded-full px-2 py-0.5 text-xs font-semibold ${s.status === 'cancelled'
-                                                ? 'bg-red-100 text-red-600'
-                                                : 'bg-green-100 text-green-700'
-                                                }`}
+                                            className={`badge ${s.status === 'cancelled' ? 'badge-danger' : 'badge-success'}`}
                                         >
                                             {s.status}
                                         </span>
                                     </td>
-                                    <td className="py-3 text-right font-semibold">
+                                    <td className="text-right font-semibold">
                                         {formatINR(s.total)}
                                     </td>
-                                    <td className="py-3 text-right">
+                                    <td className="text-right">
                                         <div className="flex justify-end gap-2">
                                             <Link
                                                 to={`/sales/${s.id}`}
-                                                className="rounded-lg px-3 py-1.5 text-xs font-semibold text-primary hover:bg-white/70"
+                                                className="btn-ghost px-3 py-1.5 text-xs"
                                             >
                                                 Invoice
                                             </Link>
                                             {s.status !== 'cancelled' && (
                                                 <button
                                                     onClick={() => handleCancel(s.id)}
-                                                    className="rounded-lg px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50"
+                                                    className="btn-danger px-3 py-1.5 text-xs"
                                                 >
                                                     Cancel
                                                 </button>
