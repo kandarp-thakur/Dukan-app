@@ -6,14 +6,14 @@
 
 **Architecture:** Approach 1 (approved): design tokens in `client/tailwind.config.js` + CSS component classes in `client/src/index.css` `@layer components`; pages apply the classes and lucide icons directly. No shared-component extraction. The background is a pure-CSS multi-blob gradient stack on `body` (no blob DOM elements). Tailwind shadow utilities cannot stack, so `shadow-glass` / `shadow-glass-lg` are single combined `box-shadow` values (ambient + inset top highlight).
 
-**Tech Stack:** React 18, Vite 5, Tailwind CSS 3.4 (existing) + `lucide-react` (new, only new dependency). Tests: Vitest + React Testing Library (existing suites must stay green and unmodified, except `theme.test.jsx` which is extended).
+**Tech Stack:** React 18, Vite 5, Tailwind CSS 3.4 (existing) + `lucide-react` (new, only new dependency). Tests: Vitest + React Testing Library (existing suites must stay green and unmodified, except `theme.test.jsx` which is extended and `AppShell.test.jsx` whose staff-role assertions are scoped to the nav — see Task 2 Step 3).
 
 **Spec:** `docs/superpowers/specs/2026-09-11-glassmorphism-redesign-design.md` (approved). Visual reference: `docs/ui-style-guide.md` (already documents the target state).
 
 ## Global Constraints
 
 - **Visual-only pass.** Do not change routes, handlers, API calls, payloads, validation, or any server file. Do not rename props, state, or exported components.
-- **Existing tests must pass UNCHANGED**, except `client/src/theme.test.jsx` (extended with new assertions only). Tests query by text/role/label — therefore **button texts, link texts, labels, and rendered values must stay byte-identical** (e.g. `Record sale`, `Khata`, `Low stock`, `Current plan`, `₹1,400`, `completed`, `cash`).
+- **Existing tests must pass UNCHANGED**, except `client/src/theme.test.jsx` (extended with new assertions only) and `client/src/components/AppShell.test.jsx` (staff-role assertions scoped to the nav via `within`, because the new sidebar footer renders the user's name, which can collide with whole-screen text queries — see Task 2 Step 3). Tests query by text/role/label — therefore **button texts, link texts, labels, and rendered values must stay byte-identical** (e.g. `Record sale`, `Khata`, `Low stock`, `Current plan`, `₹1,400`, `completed`, `cash`).
 - **No browser testing by the agent (user rule).** Verify with Vitest (jsdom) + eslint; the user visually verifies via the already-running dev server (client on :5173).
 - **No emoji anywhere in `client/src` after this plan.** All icons come from `lucide-react`.
 - **No motion** beyond the `.skeleton` shimmer (`animate-pulse`). No transforms, lifts, tilts, or page transitions. Color/shadow `transition` utilities are allowed (they animate properties, not position).
@@ -193,10 +193,11 @@ git add client/package.json client/package-lock.json client/tailwind.config.js c
 **Files:**
 - Modify: `client/src/components/AppShell.jsx`
 - Modify: `client/src/theme.test.jsx`
+- Modify: `client/src/components/AppShell.test.jsx`
 
 **Interfaces:**
 - Consumes: `.glass`, `.badge*`, `.btn-ghost`, `shadow-btn-glow` (Task 1); `lucide-react` icons `Store`, `LayoutDashboard`, `Receipt`, `Wallet`, `Users`, `Truck`, `Package`, `BarChart3`, `UserCog`, `Settings`, `Crown`, `LogOut`
-- Produces: same nav routes/labels/role filtering as before; sidebar now renders an SVG per nav item, a plan badge (`Free plan` / `Pro plan`), and a user footer (initials avatar, name, role chip). `AppShell.test.jsx` assertions (`Dashboard`…`Subscription` labels, `Owner Shop`, owner-only filtering) remain satisfied.
+- Produces: same nav routes/labels/role filtering as before; sidebar now renders an SVG per nav item, a plan badge (`Free plan` / `Pro plan`), and a user footer (initials avatar, name, role chip). `AppShell.test.jsx` keeps its assertions (`Dashboard`…`Subscription` labels, `Owner Shop`, owner-only filtering) with the staff-role queries scoped to the nav (Step 3), because the new footer renders the user's name and the staff mock's name is `Staff`, which would otherwise collide with the whole-screen `queryByText('Staff')`.
 
 - [ ] **Step 1: Replace `client/src/components/AppShell.jsx` with the full new content**
 
@@ -362,7 +363,68 @@ describe('theme wiring smoke test', () => {
 });
 ```
 
-- [ ] **Step 3: Run the targeted tests, then the full suite**
+- [ ] **Step 3: Replace `client/src/components/AppShell.test.jsx` with the full new content**
+
+The new sidebar footer renders the signed-in user's name, and this suite's staff mock uses `name: 'Staff'` — a whole-screen `queryByText('Staff')` would match the footer paragraph instead of asserting nav filtering. Scope the owner-only assertions to the nav (the test's intent) with `within`; the owner test is unchanged:
+
+```jsx
+import { render, screen, within } from '@testing-library/react';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import AppShell from './AppShell';
+
+const mockAuth = {
+  user: { role: 'owner', name: 'Owner' },
+  business: { name: 'Owner Shop', plan: 'free' },
+  logout: vi.fn().mockResolvedValue(undefined),
+};
+
+vi.mock('../context/AuthContext', () => ({
+  useAuth: () => mockAuth,
+}));
+
+const renderShell = () =>
+  render(
+    <MemoryRouter initialEntries={['/dashboard']}>
+      <Routes>
+        <Route path="/dashboard" element={<AppShell />} />
+      </Routes>
+    </MemoryRouter>
+  );
+
+describe('AppShell', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('shows all nav items for owner', () => {
+    renderShell();
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Sales')).toBeInTheDocument();
+    expect(screen.getByText('Expenses')).toBeInTheDocument();
+    expect(screen.getByText('Customers')).toBeInTheDocument();
+    expect(screen.getByText('Suppliers')).toBeInTheDocument();
+    expect(screen.getByText('Products')).toBeInTheDocument();
+    expect(screen.getByText('Reports')).toBeInTheDocument();
+    expect(screen.getByText('Staff')).toBeInTheDocument();
+    expect(screen.getByText('Settings')).toBeInTheDocument();
+    expect(screen.getByText('Subscription')).toBeInTheDocument();
+    expect(screen.getAllByText('Owner Shop').length).toBeGreaterThan(0);
+  });
+
+  it('hides owner-only nav items for staff', () => {
+    mockAuth.user = { role: 'staff', name: 'Staff' };
+    renderShell();
+    const nav = screen.getByRole('navigation');
+    expect(within(nav).getByText('Sales')).toBeInTheDocument();
+    expect(within(nav).queryByText('Reports')).toBeNull();
+    expect(within(nav).queryByText('Staff')).toBeNull();
+    expect(within(nav).queryByText('Settings')).toBeNull();
+    expect(within(nav).queryByText('Subscription')).toBeNull();
+    mockAuth.user = { role: 'owner', name: 'Owner' };
+  });
+});
+```
+
+- [ ] **Step 4: Run the targeted tests, then the full suite**
 
 ```bash
 cd client && npx vitest run src/components/AppShell.test.jsx src/theme.test.jsx
@@ -372,12 +434,12 @@ cd client && npx vitest run src/components/AppShell.test.jsx src/theme.test.jsx
 npm run test:client
 ```
 
-Expected: all pass. (`My Business` still renders in sidebar + mobile header; nav labels are direct text nodes of the `NavLink`s, so `getByText('Dashboard')` etc. still match; owner-only filtering unchanged.)
+Expected: all pass. (`My Business` still renders in sidebar + mobile header; nav labels are direct text nodes of the `NavLink`s, so `getByText('Dashboard')` etc. still match; owner-only filtering unchanged. In `AppShell.test.jsx`, the staff-role assertions are scoped to the nav, so the footer's `Staff` user name no longer collides with `queryByText('Staff')`.)
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add client/src/components/AppShell.jsx client/src/theme.test.jsx && git commit -m "feat: restyle app shell with lucide icons, badges, and gradient nav"
+git add client/src/components/AppShell.jsx client/src/theme.test.jsx client/src/components/AppShell.test.jsx && git commit -m "feat: restyle app shell with lucide icons, badges, and gradient nav"
 ```
 
 ---
@@ -2875,7 +2937,7 @@ Then ask the user to visually verify the running dev server (client on :5173): b
 
 ## Verification Summary (what "done" means)
 
-- `npm run test:client` — all suites green, only `theme.test.jsx` changed (extended)
+- `npm run test:client` — all suites green, only `theme.test.jsx` (extended) and `AppShell.test.jsx` (owner-only assertions scoped to the nav) changed
 - `cd client && npx eslint .` — clean
 - Zero emoji in `client/src`; every page uses lucide icons
 - Visual check by the user: rich light glass on every surface, green brand intact, invoice prints clean
