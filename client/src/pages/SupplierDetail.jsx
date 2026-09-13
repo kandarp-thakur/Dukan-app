@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { suppliersApi } from '../api/endpoints';
 import { formatINR, rupeesToPaise } from '../utils/money';
 import { formatDate } from '../utils/format';
+import { Truck, Landmark } from 'lucide-react';
 
 const EMPTY_PURCHASE = { name: '', qty: '', cost: '', paymentMethod: 'cash' };
 const EMPTY_PAYMENT = { amount: '', method: 'upi', note: '' };
@@ -107,7 +108,10 @@ export default function SupplierDetail() {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-primary">
+                <h1 className="flex items-center gap-3 text-2xl font-bold text-primary">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/60">
+                        <Truck size={24} className="text-primary" />
+                    </span>
                     {data ? data.supplier.name : 'Supplier'}
                 </h1>
                 <Link to="/suppliers" className="text-sm font-semibold text-primary hover:underline">
@@ -118,17 +122,28 @@ export default function SupplierDetail() {
                 <div className="glass px-4 py-3 text-sm font-medium text-red-600">{error}</div>
             )}
             {loading ? (
-                <p className="text-sm text-gray-500">Loading statement…</p>
+                <div className="space-y-6">
+                    <div className="skeleton h-24" />
+                    <div className="grid gap-6 lg:grid-cols-2">
+                        <div className="skeleton h-72" />
+                        <div className="skeleton h-72" />
+                    </div>
+                </div>
             ) : (
                 data && (
                     <>
-                        <div className="glass p-6">
-                            <p className="text-xs uppercase tracking-wide text-gray-500">
-                                Payable balance
-                            </p>
-                            <p className="mt-1 text-3xl font-bold text-primary">
-                                {formatINR(data.balance)}
-                            </p>
+                        <div className="glass flex items-center justify-between p-6">
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                    Payable balance
+                                </p>
+                                <p className="mt-1 text-3xl font-bold text-primary">
+                                    {formatINR(data.balance)}
+                                </p>
+                            </div>
+                            <span className="rounded-2xl bg-white/60 p-3">
+                                <Landmark size={28} className="text-primary" />
+                            </span>
                         </div>
                         <div className="grid gap-6 lg:grid-cols-2">
                             <div className="glass p-6">
@@ -240,16 +255,22 @@ export default function SupplierDetail() {
                         <div className="glass overflow-x-auto p-6">
                             <h2 className="mb-4 text-lg font-semibold">Statement</h2>
                             {rows.length === 0 ? (
-                                <p className="text-sm text-gray-500">No purchases or payments yet.</p>
+                                <div className="empty-state">
+                                    <span className="rounded-full bg-white/60 p-3">
+                                        <Truck size={28} className="text-primary" />
+                                    </span>
+                                    <p className="font-semibold">No purchases or payments yet</p>
+                                    <p className="text-sm text-gray-500">Record a purchase or payment above.</p>
+                                </div>
                             ) : (
-                                <table className="w-full text-sm">
+                                <table className="glass-table">
                                     <thead>
-                                        <tr className="text-left text-xs uppercase tracking-wide text-gray-500">
-                                            <th className="pb-3">Date</th>
-                                            <th className="pb-3">Type</th>
-                                            <th className="pb-3">Details</th>
-                                            <th className="pb-3 text-right">Amount</th>
-                                            <th className="pb-3 text-right">Payable</th>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Type</th>
+                                            <th>Details</th>
+                                            <th className="text-right">Amount</th>
+                                            <th className="text-right">Payable</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -267,21 +288,25 @@ export default function SupplierDetail() {
                                                     : `${formatINR(row.purchase.total)} (paid)`
                                                 : `-${formatINR(row.payment.amount)}`;
                                             return (
-                                                <tr key={isPurchase ? row.purchase.id : row.payment.id || i} className="border-t border-white/50">
-                                                    <td className="py-3 text-gray-500">
+                                                <tr key={isPurchase ? row.purchase.id : row.payment.id || i}>
+                                                    <td className="text-gray-500">
                                                         {formatDate(row.date)}
                                                     </td>
-                                                    <td className="py-3 font-medium">
-                                                        {isPurchase ? 'Purchase' : 'Payment'}
+                                                    <td>
+                                                        <span
+                                                            className={`badge ${isPurchase ? 'badge-neutral' : 'badge-success'}`}
+                                                        >
+                                                            {isPurchase ? 'Purchase' : 'Payment'}
+                                                        </span>
                                                     </td>
-                                                    <td className="py-3 text-gray-500">{details}</td>
+                                                    <td className="text-gray-500">{details}</td>
                                                     <td
-                                                        className={`py-3 text-right font-semibold ${credit || !isPurchase ? 'text-red-600' : 'text-gray-600'
+                                                        className={`text-right font-semibold ${credit || !isPurchase ? 'text-red-600' : 'text-gray-600'
                                                             }`}
                                                     >
                                                         {amountText}
                                                     </td>
-                                                    <td className="py-3 text-right font-semibold">
+                                                    <td className="text-right font-semibold">
                                                         {formatINR(row.running)}
                                                     </td>
                                                 </tr>

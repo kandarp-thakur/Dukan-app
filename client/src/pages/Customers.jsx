@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { customersApi } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
 import { formatINR } from '../utils/money';
+import { Users } from 'lucide-react';
 
 export default function Customers() {
     const { user } = useAuth();
@@ -61,7 +62,12 @@ export default function Customers() {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold text-primary">Customers</h1>
+            <h1 className="flex items-center gap-3 text-2xl font-bold text-primary">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/60">
+                    <Users size={24} className="text-primary" />
+                </span>
+                Customers
+            </h1>
             {error && (
                 <div className="glass px-4 py-3 text-sm font-medium text-red-600">{error}</div>
             )}
@@ -94,42 +100,52 @@ export default function Customers() {
             </div>
             <div className="glass overflow-x-auto p-6">
                 {loading ? (
-                    <p className="text-sm text-gray-500">Loading customers…</p>
+                    <div className="space-y-2">
+                        {[0, 1, 2].map((i) => (
+                            <div key={i} className="skeleton h-10" />
+                        ))}
+                    </div>
                 ) : customers.length === 0 ? (
-                    <p className="text-sm text-gray-500">No customers yet. Add your first customer above.</p>
+                    <div className="empty-state">
+                        <span className="rounded-full bg-white/60 p-3">
+                            <Users size={28} className="text-primary" />
+                        </span>
+                        <p className="font-semibold">No customers yet</p>
+                        <p className="text-sm text-gray-500">Add your first customer above.</p>
+                    </div>
                 ) : (
-                    <table className="w-full text-sm">
+                    <table className="glass-table">
                         <thead>
-                            <tr className="text-left text-xs uppercase tracking-wide text-gray-500">
-                                <th className="pb-3">Name</th>
-                                <th className="pb-3">Phone</th>
-                                <th className="pb-3">Balance (to receive)</th>
-                                <th className="pb-3">Actions</th>
+                            <tr>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th>Balance (to receive)</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {customers.map((c) => (
-                                <tr key={c.id} className="border-t border-white/50">
-                                    <td className="py-3 font-medium">{c.name}</td>
-                                    <td className="py-3 text-gray-500">{c.phone || '—'}</td>
+                                <tr key={c.id}>
+                                    <td className="font-medium">{c.name}</td>
+                                    <td className="text-gray-500">{c.phone || '—'}</td>
                                     <td
-                                        className={`py-3 font-semibold ${c.balance > 0 ? 'text-red-600' : 'text-green-600'
+                                        className={`font-semibold ${c.balance > 0 ? 'text-red-600' : 'text-green-600'
                                             }`}
                                     >
                                         {formatINR(c.balance)}
                                     </td>
-                                    <td className="py-3">
+                                    <td>
                                         <div className="flex gap-2">
                                             <Link
                                                 to={`/customers/${c.id}`}
-                                                className="rounded-lg px-3 py-1.5 text-xs font-semibold text-primary hover:bg-white/70"
+                                                className="btn-ghost px-3 py-1.5 text-xs"
                                             >
                                                 Khata
                                             </Link>
                                             {isOwner && (
                                                 <button
                                                     onClick={() => handleDelete(c.id)}
-                                                    className="rounded-lg px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50"
+                                                    className="btn-danger px-3 py-1.5 text-xs"
                                                 >
                                                     Delete
                                                 </button>

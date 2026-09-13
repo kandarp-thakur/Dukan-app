@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { customersApi } from '../api/endpoints';
 import { formatINR, rupeesToPaise } from '../utils/money';
 import { formatDate } from '../utils/format';
+import { Users, BookOpen } from 'lucide-react';
 
 export default function CustomerDetail() {
     const { id } = useParams();
@@ -66,7 +67,10 @@ export default function CustomerDetail() {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-primary">
+                <h1 className="flex items-center gap-3 text-2xl font-bold text-primary">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/60">
+                        <Users size={24} className="text-primary" />
+                    </span>
                     {data ? data.customer.name : 'Khata'}
                 </h1>
                 <Link to="/customers" className="text-sm font-semibold text-primary hover:underline">
@@ -77,17 +81,25 @@ export default function CustomerDetail() {
                 <div className="glass px-4 py-3 text-sm font-medium text-red-600">{error}</div>
             )}
             {loading ? (
-                <p className="text-sm text-gray-500">Loading khata…</p>
+                <div className="space-y-6">
+                    <div className="skeleton h-24" />
+                    <div className="skeleton h-40" />
+                </div>
             ) : (
                 data && (
                     <>
-                        <div className="glass p-6">
-                            <p className="text-xs uppercase tracking-wide text-gray-500">
-                                Khata balance (to receive)
-                            </p>
-                            <p className="mt-1 text-3xl font-bold text-primary">
-                                {formatINR(data.balance)}
-                            </p>
+                        <div className="glass flex items-center justify-between p-6">
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                    Khata balance (to receive)
+                                </p>
+                                <p className="mt-1 text-3xl font-bold text-primary">
+                                    {formatINR(data.balance)}
+                                </p>
+                            </div>
+                            <span className="rounded-2xl bg-white/60 p-3">
+                                <BookOpen size={28} className="text-primary" />
+                            </span>
                         </div>
                         <div className="glass p-6">
                             <h2 className="mb-4 text-lg font-semibold">Record payment</h2>
@@ -122,37 +134,47 @@ export default function CustomerDetail() {
                         <div className="glass overflow-x-auto p-6">
                             <h2 className="mb-4 text-lg font-semibold">Statement</h2>
                             {rows.length === 0 ? (
-                                <p className="text-sm text-gray-500">No khata entries yet.</p>
+                                <div className="empty-state">
+                                    <span className="rounded-full bg-white/60 p-3">
+                                        <BookOpen size={28} className="text-primary" />
+                                    </span>
+                                    <p className="font-semibold">No khata entries yet</p>
+                                    <p className="text-sm text-gray-500">Credit sales and payments will appear here.</p>
+                                </div>
                             ) : (
-                                <table className="w-full text-sm">
+                                <table className="glass-table">
                                     <thead>
-                                        <tr className="text-left text-xs uppercase tracking-wide text-gray-500">
-                                            <th className="pb-3">Date</th>
-                                            <th className="pb-3">Type</th>
-                                            <th className="pb-3">Note</th>
-                                            <th className="pb-3 text-right">Amount</th>
-                                            <th className="pb-3 text-right">Balance</th>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Type</th>
+                                            <th>Note</th>
+                                            <th className="text-right">Amount</th>
+                                            <th className="text-right">Balance</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {rows.map((entry) => (
-                                            <tr key={entry.id} className="border-t border-white/50">
-                                                <td className="py-3 text-gray-500">
+                                            <tr key={entry.id}>
+                                                <td className="text-gray-500">
                                                     {formatDate(entry.date)}
                                                 </td>
-                                                <td className="py-3 font-medium">
-                                                    {entry.type === 'credit' ? 'Credit (udhaar)' : 'Payment'}
+                                                <td>
+                                                    <span
+                                                        className={`badge ${entry.type === 'credit' ? 'badge-danger' : 'badge-success'}`}
+                                                    >
+                                                        {entry.type === 'credit' ? 'Credit (udhaar)' : 'Payment'}
+                                                    </span>
                                                 </td>
-                                                <td className="py-3 text-gray-500">{entry.note || '—'}</td>
+                                                <td className="text-gray-500">{entry.note || '—'}</td>
                                                 <td
-                                                    className={`py-3 text-right font-semibold ${entry.type === 'credit' ? 'text-red-600' : 'text-green-600'
+                                                    className={`text-right font-semibold ${entry.type === 'credit' ? 'text-red-600' : 'text-green-600'
                                                         }`}
                                                 >
                                                     {entry.type === 'credit'
                                                         ? `+${formatINR(entry.amount)}`
                                                         : `-${formatINR(entry.amount)}`}
                                                 </td>
-                                                <td className="py-3 text-right font-semibold">
+                                                <td className="text-right font-semibold">
                                                     {formatINR(entry.running)}
                                                 </td>
                                             </tr>
