@@ -64,6 +64,38 @@ describe('Customers API', () => {
             .send({ name: 'Steal' });
         expect(res.status).toBe(404);
     });
+
+    it('creates and updates a customer with GSTIN and address', async () => {
+        const data = await registerBusiness('GST');
+        const created = await request(app)
+            .post('/api/v1/customers')
+            .set('Authorization', `Bearer ${data.accessToken}`)
+            .send({
+                name: 'Ramesh Traders',
+                phone: '9812345678',
+                gstin: '27XYZAB5678C1Z9',
+                address: 'MG Road, Pune',
+            });
+        expect(created.status).toBe(201);
+        expect(created.body.data.customer.gstin).toBe('27XYZAB5678C1Z9');
+        expect(created.body.data.customer.address).toBe('MG Road, Pune');
+
+        const updated = await request(app)
+            .patch(`/api/v1/customers/${created.body.data.customer.id}`)
+            .set('Authorization', `Bearer ${data.accessToken}`)
+            .send({ address: 'FC Road, Pune' });
+        expect(updated.status).toBe(200);
+        expect(updated.body.data.customer.address).toBe('FC Road, Pune');
+    });
+
+    it('rejects a short GSTIN', async () => {
+        const data = await registerBusiness('GST2');
+        const res = await request(app)
+            .post('/api/v1/customers')
+            .set('Authorization', `Bearer ${data.accessToken}`)
+            .send({ name: 'Ramesh', gstin: '123' });
+        expect(res.status).toBe(400);
+    });
 });
 
 describe('Khata API', () => {

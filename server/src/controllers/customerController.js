@@ -29,17 +29,19 @@ exports.listCustomers = async (req, res) => {
 };
 
 exports.createCustomer = async (req, res) => {
-    const { name, phone } = req.body;
+    const { name, phone, gstin, address } = req.body;
     const customer = await Customer.create({
         businessId: req.businessId,
         name,
         phone: phone || '',
+        gstin: gstin || '',
+        address: address || '',
     });
     return res.status(201).json({ success: true, message: 'Customer created', data: { customer } });
 };
 
 exports.updateCustomer = async (req, res) => {
-    const allowed = ['name', 'phone'];
+    const allowed = ['name', 'phone', 'gstin', 'address'];
     const updates = {};
     for (const key of allowed) {
         if (req.body[key] !== undefined) {

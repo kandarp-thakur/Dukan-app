@@ -10,6 +10,8 @@ const customerSchema = new mongoose.Schema(
         },
         name: { type: String, required: [true, 'Customer name is required'], trim: true },
         phone: { type: String, default: '' },
+        gstin: { type: String, default: '' },
+        address: { type: String, default: '' },
         balance: { type: Number, default: 0 },
     },
     { timestamps: true }

@@ -16,6 +16,12 @@ router.post(
     tenantScope,
     body('name').trim().notEmpty().withMessage('Customer name is required'),
     body('phone').optional({ values: 'falsy' }).trim(),
+    body('gstin')
+        .optional({ values: 'falsy' })
+        .trim()
+        .isLength({ min: 15, max: 15 })
+        .withMessage('GSTIN must be 15 characters'),
+    body('address').optional({ values: 'falsy' }).trim(),
     validate,
     customerController.createCustomer
 );
@@ -26,6 +32,12 @@ router.patch(
     tenantScope,
     body('name').optional().trim().notEmpty().withMessage('Customer name cannot be empty'),
     body('phone').optional({ values: 'falsy' }).trim(),
+    body('gstin')
+        .optional({ values: 'falsy' })
+        .trim()
+        .isLength({ min: 15, max: 15 })
+        .withMessage('GSTIN must be 15 characters'),
+    body('address').optional({ values: 'falsy' }).trim(),
     validate,
     customerController.updateCustomer
 );
