@@ -47,16 +47,18 @@ The sale document gains:
 | `sgst` | Number | `0` | Paise, computed |
 | `igst` | Number | `0` | Paise, computed |
 
-### 2.2 GST computation (extended `pre('validate')` hook)
+### 2.2 GST computation
+
+**Division of labor:** the `pre('validate')` hook on [`Sale.js`](server/src/models/Sale.js) keeps computing line arithmetic (`amount`, `subtotal`, `total`) as today. The **GST split is computed by the sale controller** via the shared `computeGst()` util — because the intra/inter-state decision needs the business GSTIN, which only the controller has (it already loads the business for invoice numbering). The computed `cgst`/`sgst`/`igst`/`tax` are set on the `Sale.create()` payload, so the hook's `total = subtotal − discount + tax` picks them up.
 
 1. Line totals as today: `amount = qty × rate` (rates are pre-GST / tax-exclusive)
-2. Discount stays sale-level and is **allocated proportionally across lines** before GST is applied, so the taxable base is correct: `taxableValue_i = amount_i − discount × (amount_i / subtotal)`
+2. Discount stays sale-level and is **allocated proportionally across lines** before GST is applied, so the taxable base is correct: `taxableValue_i = amount_i − discount × (amount_i / subtotal)`. Each line's taxable value is rounded to the nearest paise; the **last line absorbs the rounding remainder** so allocated discount always sums exactly to `discount`.
 3. If `isGst` is true:
-   - `gstTotal = Σ(taxableValue_i × gstRate_i / 100)`
+   - `gstTotal = Σ(taxableValue_i × gstRate_i / 100)` (rounded to nearest paise)
    - Inter-state (`placeOfSupply` ≠ business GSTIN state code): `igst = gstTotal`, `cgst = sgst = 0`
    - Intra-state: `cgst = sgst = gstTotal / 2`; paise rounding remainder (odd `gstTotal`) goes to CGST
    - `tax = cgst + sgst + igst` — the existing field keeps meaning "total tax", so dashboard/reports continue to work unchanged
-4. `total = subtotal − discount + tax` (unchanged formula)
+4. `total = subtotal − discount + tax` (unchanged formula, computed in the hook)
 5. If `isGst` is false: `cgst = sgst = igst = 0`; `tax` behaves as before (accepted from payload for backward compatibility)
 
 ### 2.3 GSTIN state derivation — shared `utils/gst.js`
@@ -103,7 +105,7 @@ Controller rules ([`saleController.js`](server/src/controllers/saleController.js
 
 - If `isGst` → business must have `gstin` set, else 400 `"GST invoice requires business GSTIN"`
 - If `isGst` and any line has `gstRate > 0` but no `hsn` → 400 `"HSN code is required for taxed items"`
-- When `isGst` and a `customerId` is provided, buyer snapshot fields default from the customer record; explicit payload values win
+- When a `customerId` is provided, `buyerName` defaults from the customer record (explicit payload value wins) — for **every** sale, so invoice search by customer name works on non-GST sales too. When `isGst` is additionally true, `buyerGstin`/`buyerAddress` also default from the customer record; explicit payload values win.
 - The old `tax` input is **removed from the sale form** (GST computed from rates). The API keeps accepting `tax` for backward compatibility but ignores it when `isGst` is true.
 
 ### 3.3 Client API layer
