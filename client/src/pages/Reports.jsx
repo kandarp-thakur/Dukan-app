@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react';
 import { reportsApi } from '../api/endpoints';
 import { formatINR } from '../utils/money';
+import {
+    BarChart3,
+    TrendingUp,
+    TrendingDown,
+    PiggyBank,
+    BookOpen,
+    Landmark,
+} from 'lucide-react';
 
 const TABS = [
     { key: 'daily', label: 'Daily' },
@@ -55,7 +63,12 @@ export default function Reports() {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold text-primary">Reports</h1>
+            <h1 className="flex items-center gap-3 text-2xl font-bold text-primary">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/60">
+                    <BarChart3 size={24} className="text-primary" />
+                </span>
+                Reports
+            </h1>
 
             <div className="glass flex flex-wrap gap-2 p-1">
                 {TABS.map(({ key, label }) => (
@@ -63,7 +76,9 @@ export default function Reports() {
                         key={key}
                         type="button"
                         onClick={() => handleTab(key)}
-                        className={`rounded-lg px-4 py-1.5 text-sm font-semibold ${tab === key ? 'bg-primary text-white' : 'text-primary hover:bg-white/50'
+                        className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition ${tab === key
+                                ? 'bg-gradient-to-r from-primary to-accent text-white shadow-btn-glow'
+                                : 'text-primary hover:bg-white/50'
                             }`}
                     >
                         {label}
@@ -72,7 +87,16 @@ export default function Reports() {
             </div>
 
             {error && <div className="glass border border-red-200 p-4 text-sm text-red-600">{error}</div>}
-            {loading && <div className="glass p-6 text-center text-gray-500">Loading report…</div>}
+            {loading && (
+                <div className="glass p-6">
+                    <div className="skeleton h-8 w-40" />
+                    <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <div className="skeleton h-24" />
+                        <div className="skeleton h-24" />
+                        <div className="skeleton h-24" />
+                    </div>
+                </div>
+            )}
 
             {report && !loading && tab === 'daily' && (
                 <section className="glass p-6">
@@ -97,16 +121,31 @@ export default function Reports() {
                         </div>
                     </div>
                     <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-                        <div className="glass p-5">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Sales</p>
+                        <div className="glass-card p-5">
+                            <div className="flex items-start justify-between gap-3">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Sales</p>
+                                <span className="rounded-xl bg-white/60 p-2">
+                                    <TrendingUp size={20} className="text-green-600" />
+                                </span>
+                            </div>
                             <p className="mt-2 text-2xl font-bold text-green-600">{formatINR(report.salesTotal)}</p>
                         </div>
-                        <div className="glass p-5">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Expenses</p>
+                        <div className="glass-card p-5">
+                            <div className="flex items-start justify-between gap-3">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Expenses</p>
+                                <span className="rounded-xl bg-white/60 p-2">
+                                    <TrendingDown size={20} className="text-red-600" />
+                                </span>
+                            </div>
                             <p className="mt-2 text-2xl font-bold text-red-600">{formatINR(report.expensesTotal)}</p>
                         </div>
-                        <div className="glass p-5">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Profit</p>
+                        <div className="glass-card p-5">
+                            <div className="flex items-start justify-between gap-3">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Profit</p>
+                                <span className="rounded-xl bg-white/60 p-2">
+                                    <PiggyBank size={20} className="text-primary" />
+                                </span>
+                            </div>
                             <p className="mt-2 text-2xl font-bold text-primary">{formatINR(report.profit)}</p>
                         </div>
                     </div>
@@ -136,16 +175,31 @@ export default function Reports() {
                         </div>
                     </div>
                     <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-                        <div className="glass p-5">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Sales</p>
+                        <div className="glass-card p-5">
+                            <div className="flex items-start justify-between gap-3">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Sales</p>
+                                <span className="rounded-xl bg-white/60 p-2">
+                                    <TrendingUp size={20} className="text-green-600" />
+                                </span>
+                            </div>
                             <p className="mt-2 text-2xl font-bold text-green-600">{formatINR(report.salesTotal)}</p>
                         </div>
-                        <div className="glass p-5">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Expenses</p>
+                        <div className="glass-card p-5">
+                            <div className="flex items-start justify-between gap-3">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Expenses</p>
+                                <span className="rounded-xl bg-white/60 p-2">
+                                    <TrendingDown size={20} className="text-red-600" />
+                                </span>
+                            </div>
                             <p className="mt-2 text-2xl font-bold text-red-600">{formatINR(report.expensesTotal)}</p>
                         </div>
-                        <div className="glass p-5">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Profit</p>
+                        <div className="glass-card p-5">
+                            <div className="flex items-start justify-between gap-3">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Profit</p>
+                                <span className="rounded-xl bg-white/60 p-2">
+                                    <PiggyBank size={20} className="text-primary" />
+                                </span>
+                            </div>
                             <p className="mt-2 text-2xl font-bold text-primary">{formatINR(report.profit)}</p>
                         </div>
                     </div>
@@ -156,18 +210,28 @@ export default function Reports() {
                 <section className="glass p-6">
                     <h2 className="text-lg font-semibold text-gray-800">Outstanding report</h2>
                     <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div className="glass p-5">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                Receivable (khata)
-                            </p>
+                        <div className="glass-card p-5">
+                            <div className="flex items-start justify-between gap-3">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                    Receivable (khata)
+                                </p>
+                                <span className="rounded-xl bg-white/60 p-2">
+                                    <BookOpen size={20} className="text-orange-600" />
+                                </span>
+                            </div>
                             <p className="mt-2 text-2xl font-bold text-orange-600">
                                 {formatINR(report.receivableTotal)}
                             </p>
                         </div>
-                        <div className="glass p-5">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                Payable (suppliers)
-                            </p>
+                        <div className="glass-card p-5">
+                            <div className="flex items-start justify-between gap-3">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                    Payable (suppliers)
+                                </p>
+                                <span className="rounded-xl bg-white/60 p-2">
+                                    <Landmark size={20} className="text-red-700" />
+                                </span>
+                            </div>
                             <p className="mt-2 text-2xl font-bold text-red-700">{formatINR(report.payableTotal)}</p>
                         </div>
                     </div>
@@ -176,27 +240,27 @@ export default function Reports() {
                             <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
                                 Customers who owe you
                             </h3>
-                            <table className="mt-2 w-full text-sm">
+                            <table className="glass-table mt-2">
                                 <thead>
-                                    <tr className="border-b border-gray-200 text-left text-xs uppercase text-gray-400">
-                                        <th className="pb-2">Name</th>
-                                        <th className="pb-2">Phone</th>
-                                        <th className="pb-2 text-right">Balance</th>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Phone</th>
+                                        <th className="text-right">Balance</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {report.receivables.map((c) => (
-                                        <tr key={c.id} className="border-b border-gray-100">
-                                            <td className="py-2 font-medium text-gray-800">{c.name}</td>
-                                            <td className="py-2 text-gray-500">{c.phone || '—'}</td>
-                                            <td className="py-2 text-right font-semibold text-orange-600">
+                                        <tr key={c.id}>
+                                            <td className="font-medium text-gray-800">{c.name}</td>
+                                            <td className="text-gray-500">{c.phone || '—'}</td>
+                                            <td className="text-right font-semibold text-orange-600">
                                                 {formatINR(c.balance)}
                                             </td>
                                         </tr>
                                     ))}
                                     {report.receivables.length === 0 && (
                                         <tr>
-                                            <td colSpan={3} className="py-3 text-center text-gray-400">
+                                            <td colSpan={3} className="text-center text-gray-400">
                                                 No outstanding khata
                                             </td>
                                         </tr>
@@ -208,27 +272,27 @@ export default function Reports() {
                             <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
                                 Suppliers you owe
                             </h3>
-                            <table className="mt-2 w-full text-sm">
+                            <table className="glass-table mt-2">
                                 <thead>
-                                    <tr className="border-b border-gray-200 text-left text-xs uppercase text-gray-400">
-                                        <th className="pb-2">Name</th>
-                                        <th className="pb-2">Phone</th>
-                                        <th className="pb-2 text-right">Balance</th>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Phone</th>
+                                        <th className="text-right">Balance</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {report.payables.map((s) => (
-                                        <tr key={s.id} className="border-b border-gray-100">
-                                            <td className="py-2 font-medium text-gray-800">{s.name}</td>
-                                            <td className="py-2 text-gray-500">{s.phone || '—'}</td>
-                                            <td className="py-2 text-right font-semibold text-red-700">
+                                        <tr key={s.id}>
+                                            <td className="font-medium text-gray-800">{s.name}</td>
+                                            <td className="text-gray-500">{s.phone || '—'}</td>
+                                            <td className="text-right font-semibold text-red-700">
                                                 {formatINR(s.balance)}
                                             </td>
                                         </tr>
                                     ))}
                                     {report.payables.length === 0 && (
                                         <tr>
-                                            <td colSpan={3} className="py-3 text-center text-gray-400">
+                                            <td colSpan={3} className="text-center text-gray-400">
                                                 No outstanding payables
                                             </td>
                                         </tr>

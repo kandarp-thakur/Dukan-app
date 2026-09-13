@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { businessApi } from '../api/endpoints';
+import { Settings as SettingsIcon } from 'lucide-react';
 
 const EMPTY_FORM = { name: '', address: '', gstin: '', currency: 'INR', invoicePrefix: 'INV' };
 
@@ -64,11 +65,27 @@ export default function Settings() {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold text-primary">Settings</h1>
+            <h1 className="flex items-center gap-3 text-2xl font-bold text-primary">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/60">
+                    <SettingsIcon size={24} className="text-primary" />
+                </span>
+                Settings
+            </h1>
 
             {error && <div className="glass border border-red-200 p-4 text-sm text-red-600">{error}</div>}
             {notice && <div className="glass border border-green-200 p-4 text-sm text-green-700">{notice}</div>}
-            {loading && <div className="glass p-6 text-center text-gray-500">Loading settings…</div>}
+            {loading && (
+                <form className="glass space-y-4 p-6">
+                    <div className="skeleton h-8 w-40" />
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="skeleton h-11" />
+                        <div className="skeleton h-11" />
+                        <div className="skeleton h-11 sm:col-span-2" />
+                        <div className="skeleton h-11" />
+                        <div className="skeleton h-11" />
+                    </div>
+                </form>
+            )}
 
             {!loading && (
                 <form onSubmit={handleSave} className="glass space-y-4 p-6">

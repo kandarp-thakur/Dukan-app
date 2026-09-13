@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { usersApi } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
+import { UserCog } from 'lucide-react';
 
 export default function Staff() {
     const { user } = useAuth();
@@ -83,11 +84,24 @@ export default function Staff() {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold text-primary">Staff</h1>
+            <h1 className="flex items-center gap-3 text-2xl font-bold text-primary">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/60">
+                    <UserCog size={24} className="text-primary" />
+                </span>
+                Staff
+            </h1>
 
             {error && <div className="glass border border-red-200 p-4 text-sm text-red-600">{error}</div>}
             {notice && <div className="glass border border-green-200 p-4 text-sm text-green-700">{notice}</div>}
-            {loading && <div className="glass p-6 text-center text-gray-500">Loading staff…</div>}
+            {loading && (
+                <div className="glass p-6">
+                    <div className="skeleton h-10 w-48" />
+                    <div className="mt-4 space-y-2">
+                        <div className="skeleton h-10" />
+                        <div className="skeleton h-10" />
+                    </div>
+                </div>
+            )}
 
             <form onSubmit={handleCreate} className="glass space-y-4 p-6">
                 <h2 className="text-lg font-semibold text-gray-800">Add staff member</h2>
@@ -156,24 +170,24 @@ export default function Staff() {
             </form>
 
             <div className="glass overflow-x-auto p-6">
-                <table className="w-full text-sm">
+                <table className="glass-table">
                     <thead>
-                        <tr className="border-b border-gray-200 text-left text-xs uppercase text-gray-400">
-                            <th className="pb-2">Name</th>
-                            <th className="pb-2">Email</th>
-                            <th className="pb-2">Role</th>
-                            <th className="pb-2 text-right">Actions</th>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th className="text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {users.map((u) => (
-                            <tr key={u.id} className="border-b border-gray-100">
-                                <td className="py-2 font-medium text-gray-800">
+                            <tr key={u.id}>
+                                <td className="font-medium text-gray-800">
                                     {u.name}
                                     {u.id === user?.id && <span className="ml-1 text-xs text-gray-400">(you)</span>}
                                 </td>
-                                <td className="py-2 text-gray-500">{u.email}</td>
-                                <td className="py-2">
+                                <td className="text-gray-500">{u.email}</td>
+                                <td>
                                     <label htmlFor={`role-${u.id}`} className="sr-only">
                                         Role for {u.name}
                                     </label>
@@ -187,12 +201,12 @@ export default function Staff() {
                                         <option value="owner">owner</option>
                                     </select>
                                 </td>
-                                <td className="py-2 text-right">
+                                <td className="text-right">
                                     {u.id !== user?.id && (
                                         <button
                                             type="button"
                                             onClick={() => handleRemove(u.id)}
-                                            className="text-sm font-semibold text-red-600 hover:underline"
+                                            className="btn-danger px-3 py-1.5 text-xs"
                                         >
                                             Remove
                                         </button>
