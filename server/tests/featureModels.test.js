@@ -223,6 +223,49 @@ describe('Sale model', () => {
             })
         ).rejects.toThrow(mongoose.Error.ValidationError);
     });
+
+    it('defaults GST fields for a non-GST sale', async () => {
+        const sale = await Sale.create({
+            businessId: business._id,
+            items: [{ name: 'Pen', qty: 2, rate: 1000 }],
+            paymentMethod: 'cash',
+        });
+        expect(sale.isGst).toBe(false);
+        expect(sale.cgst).toBe(0);
+        expect(sale.sgst).toBe(0);
+        expect(sale.igst).toBe(0);
+        expect(sale.buyerName).toBe('');
+        expect(sale.buyerGstin).toBe('');
+        expect(sale.buyerAddress).toBe('');
+        expect(sale.placeOfSupply).toBe('');
+        expect(sale.items[0].gstRate).toBe(0);
+        expect(sale.items[0].hsn).toBe('');
+        expect(sale.total).toBe(2000);
+    });
+
+    it('persists GST fields when provided', async () => {
+        const sale = await Sale.create({
+            businessId: business._id,
+            items: [{ name: 'Rice', qty: 2, rate: 5500, gstRate: 18, hsn: '1006' }],
+            discount: 0,
+            tax: 1980,
+            cgst: 990,
+            sgst: 990,
+            igst: 0,
+            isGst: true,
+            buyerName: 'Ramesh',
+            buyerGstin: '27XYZAB5678C1Z9',
+            buyerAddress: 'MG Road, Pune',
+            placeOfSupply: 'MH',
+            paymentMethod: 'cash',
+        });
+        expect(sale.isGst).toBe(true);
+        expect(sale.cgst).toBe(990);
+        expect(sale.sgst).toBe(990);
+        expect(sale.total).toBe(11000 + 1980);
+        expect(sale.items[0].gstRate).toBe(18);
+        expect(sale.items[0].hsn).toBe('1006');
+    });
 });
 
 describe('Invoice model', () => {

@@ -7,6 +7,8 @@ const saleItemSchema = new mongoose.Schema(
         qty: { type: Number, required: true, min: [1, 'Qty must be at least 1'] },
         rate: { type: Number, required: true, min: [0, 'Rate cannot be negative'] },
         amount: { type: Number, min: 0 },
+        gstRate: { type: Number, enum: [0, 5, 12, 18, 28], default: 0 },
+        hsn: { type: String, default: '' },
     },
     { _id: false }
 );
@@ -23,6 +25,14 @@ const saleSchema = new mongoose.Schema(
         subtotal: { type: Number, min: 0 },
         discount: { type: Number, default: 0, min: 0 },
         tax: { type: Number, default: 0, min: 0 },
+        isGst: { type: Boolean, default: false },
+        cgst: { type: Number, default: 0, min: 0 },
+        sgst: { type: Number, default: 0, min: 0 },
+        igst: { type: Number, default: 0, min: 0 },
+        buyerGstin: { type: String, default: '' },
+        buyerName: { type: String, default: '' },
+        buyerAddress: { type: String, default: '' },
+        placeOfSupply: { type: String, default: '' },
         total: { type: Number, min: 0 },
         paymentMethod: {
             type: String,
