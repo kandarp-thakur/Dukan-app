@@ -744,20 +744,28 @@ exports.createSale = async (req, res) => {
         }
     }
 
-    // Atomic per-business invoice numbering (also loads the business for GST rules).
-    const business = await Business.findByIdAndUpdate(
-        req.businessId,
-        { $inc: { invoiceCounter: 1 } },
-        { new: true }
-    );
-    const invoiceNumber = `${business.invoicePrefix}-${business.invoiceCounter}`;
+    // Load the business once: GST rules need its GSTIN, numbering needs its prefix.
+    const business = await Business.findById(req.businessId);
+    if (!business) {
+        return res.status(404).json({ success: false, message: 'Business not found' });
+    }
 
+    // GST rules are validated BEFORE consuming an invoice number, so a rejected
+    // GST sale does not leave a gap in the invoice sequence.
     if (isGst && !business.gstin) {
         return res.status(400).json({ success: false, message: 'GST invoice requires business GSTIN' });
     }
     if (isGst && items.some((it) => Number(it.gstRate) > 0 && !it.hsn)) {
         return res.status(400).json({ success: false, message: 'HSN code is required for taxed items' });
     }
+
+    // Atomic per-business invoice numbering (only after all validations pass).
+    const numbered = await Business.findByIdAndUpdate(
+        req.businessId,
+        { $inc: { invoiceCounter: 1 } },
+        { new: true }
+    );
+    const invoiceNumber = `${numbered.invoicePrefix}-${numbered.invoiceCounter}`;
 
     // Buyer snapshot: name defaults on every sale; GSTIN/address additionally for GST sales.
     let buyerName = req.body.buyerName || '';
