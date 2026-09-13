@@ -94,6 +94,7 @@ acc-app-shubham/
 | `docs/superpowers/specs/2026-09-10-business-accounting-saas-design.md` | Original product design spec (features, data model, API design) |
 | `docs/superpowers/specs/2026-09-11-glassmorphism-redesign-design.md` | UI depth redesign spec |
 | `docs/superpowers/plans/2026-09-10-foundation.md` | Implementation plan for the foundation build |
+| `docs/superpowers/plans/2026-09-11-glassmorphism-redesign.md` | Implementation plan for the UI depth redesign |
 
 ## 8. Development Commands
 
@@ -116,8 +117,8 @@ acc-app-shubham/
 
 ## 10. Current State & Roadmap
 
-- **Done:** foundation build (auth, business, staff, all feature CRUD, khata, dashboard, reports, subscription UI, full server + client test suites)
-- **In progress:** glassmorphism depth redesign (spec approved; implementation plan next)
+- **Done:** foundation build (auth, business, staff, all feature CRUD, khata, dashboard, reports, subscription UI, full server + client test suites); glassmorphism depth redesign (multi-blob background, glass cards/tables, lucide icons, badges, skeletons, empty states across the shell and all 14 pages)
+- **In progress:** —
 - **Next candidates:** shared UI components extraction (StatCard/PageHeader/DataTable), Recharts dashboard charts, invoice print-to-PDF template, Razorpay integration, COGS-based profit, GST reports
 
 When making changes: keep this file updated (state, decisions, roadmap), follow the UI style guide for any new surface, and route all new endpoints through the tenant-scope middleware chain.
