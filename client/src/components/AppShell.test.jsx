@@ -29,6 +29,7 @@ describe('AppShell', () => {
     renderShell();
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
     expect(screen.getByText('Sales')).toBeInTheDocument();
+    expect(screen.getByText('Invoices')).toBeInTheDocument();
     expect(screen.getByText('Expenses')).toBeInTheDocument();
     expect(screen.getByText('Customers')).toBeInTheDocument();
     expect(screen.getByText('Suppliers')).toBeInTheDocument();
@@ -45,6 +46,7 @@ describe('AppShell', () => {
     renderShell();
     const nav = screen.getByRole('navigation');
     expect(within(nav).getByText('Sales')).toBeInTheDocument();
+    expect(within(nav).getByText('Invoices')).toBeInTheDocument();
     expect(within(nav).queryByText('Reports')).toBeNull();
     expect(within(nav).queryByText('Staff')).toBeNull();
     expect(within(nav).queryByText('Settings')).toBeNull();

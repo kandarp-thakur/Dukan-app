@@ -4,6 +4,7 @@ import {
   Store,
   LayoutDashboard,
   Receipt,
+  FileText,
   Wallet,
   Users,
   Truck,
@@ -18,6 +19,7 @@ import {
 const NAV_ITEMS = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/sales', label: 'Sales', icon: Receipt },
+  { to: '/invoices', label: 'Invoices', icon: FileText },
   { to: '/expenses', label: 'Expenses', icon: Wallet },
   { to: '/customers', label: 'Customers', icon: Users },
   { to: '/suppliers', label: 'Suppliers', icon: Truck },

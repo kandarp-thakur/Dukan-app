@@ -13,6 +13,8 @@ import Suppliers from './pages/Suppliers';
 import SupplierDetail from './pages/SupplierDetail';
 import Sales from './pages/Sales';
 import SaleDetail from './pages/SaleDetail';
+import Invoices from './pages/Invoices';
+import InvoiceDetail from './pages/InvoiceDetail';
 import Expenses from './pages/Expenses';
 import Dashboard from './pages/Dashboard';
 import Reports from './pages/Reports';
@@ -38,6 +40,8 @@ function ProtectedRoutes() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/sales" element={<Sales />} />
         <Route path="/sales/:id" element={<SaleDetail />} />
+        <Route path="/invoices" element={<Invoices />} />
+        <Route path="/invoices/:id" element={<InvoiceDetail />} />
         <Route path="/expenses" element={<Expenses />} />
         <Route path="/customers" element={<Customers />} />
         <Route path="/customers/:id" element={<CustomerDetail />} />
