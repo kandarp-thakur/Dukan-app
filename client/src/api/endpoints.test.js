@@ -22,6 +22,7 @@ import {
     usersApi,
     businessApi,
     plansApi,
+    invoicesApi,
 } from './endpoints';
 
 const envelope = (data) => ({ data: { success: true, message: 'OK', data } });
@@ -102,5 +103,17 @@ describe('api endpoints', () => {
         api.get.mockResolvedValue(envelope({ plans: [] }));
         await plansApi.list();
         expect(api.get).toHaveBeenCalledWith('/plans');
+    });
+
+    it('invoicesApi.list passes filter params', async () => {
+        api.get.mockResolvedValue(envelope({ invoices: [] }));
+        await invoicesApi.list({ type: 'gst', q: 'INV-1' });
+        expect(api.get).toHaveBeenCalledWith('/invoices', { params: { type: 'gst', q: 'INV-1' } });
+    });
+
+    it('invoicesApi.get builds the nested URL', async () => {
+        api.get.mockResolvedValue(envelope({ invoice: {}, business: {} }));
+        await invoicesApi.get('abc123');
+        expect(api.get).toHaveBeenCalledWith('/invoices/abc123');
     });
 });

@@ -43,6 +43,12 @@ export const salesApi = {
     remove: (id) => unwrap(api.delete(`/sales/${id}`)),
 };
 
+// ---------- Invoices ----------
+export const invoicesApi = {
+    list: (params) => unwrap(api.get('/invoices', { params })),
+    get: (id) => unwrap(api.get(`/invoices/${id}`)),
+};
+
 // ---------- Expenses ----------
 export const expensesApi = {
     list: () => unwrap(api.get('/expenses')),
