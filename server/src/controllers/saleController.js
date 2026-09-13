@@ -6,6 +6,7 @@ const KhataEntry = require('../models/KhataEntry');
 const Business = require('../models/Business');
 const Invoice = require('../models/Invoice');
 const { recomputeBalance } = require('./customerController');
+const { computeGst, isIntraState, stateCodeFromGstin } = require('../utils/gst');
 
 exports.listSales = async (req, res) => {
     const sales = await Sale.find({ businessId: req.businessId }).sort({ date: -1, createdAt: -1 });
@@ -22,6 +23,7 @@ exports.getSale = async (req, res) => {
 
 exports.createSale = async (req, res) => {
     const { items, discount, tax, paymentMethod, customerId, date } = req.body;
+    const isGst = req.body.isGst === true;
 
     if (paymentMethod === 'credit' && !customerId) {
         return res
@@ -29,8 +31,9 @@ exports.createSale = async (req, res) => {
             .json({ success: false, message: 'Credit sales require a customer (khata)' });
     }
 
+    let customer = null;
     if (customerId) {
-        const customer = await Customer.findOne({ _id: customerId, businessId: req.businessId });
+        customer = await Customer.findOne({ _id: customerId, businessId: req.businessId });
         if (!customer) {
             return res.status(400).json({ success: false, message: 'Customer not found' });
         }
@@ -54,19 +57,68 @@ exports.createSale = async (req, res) => {
         }
     }
 
-    // Atomic per-business invoice numbering.
-    const business = await Business.findByIdAndUpdate(
+    // Load the business once: GST rules need its GSTIN, numbering needs its prefix.
+    const business = await Business.findById(req.businessId);
+    if (!business) {
+        return res.status(404).json({ success: false, message: 'Business not found' });
+    }
+
+    // GST rules are validated BEFORE consuming an invoice number, so a rejected
+    // GST sale does not leave a gap in the invoice sequence.
+    if (isGst && !business.gstin) {
+        return res.status(400).json({ success: false, message: 'GST invoice requires business GSTIN' });
+    }
+    if (isGst && items.some((it) => Number(it.gstRate) > 0 && !it.hsn)) {
+        return res.status(400).json({ success: false, message: 'HSN code is required for taxed items' });
+    }
+
+    // Atomic per-business invoice numbering (only after all validations pass).
+    const numbered = await Business.findByIdAndUpdate(
         req.businessId,
         { $inc: { invoiceCounter: 1 } },
         { new: true }
     );
-    const invoiceNumber = `${business.invoicePrefix}-${business.invoiceCounter}`;
+    const invoiceNumber = `${numbered.invoicePrefix}-${numbered.invoiceCounter}`;
+
+    // Buyer snapshot: name defaults on every sale; GSTIN/address additionally for GST sales.
+    let buyerName = req.body.buyerName || '';
+    let buyerGstin = req.body.buyerGstin || '';
+    let buyerAddress = req.body.buyerAddress || '';
+    if (customer) {
+        if (!buyerName) buyerName = customer.name || '';
+        if (isGst) {
+            if (!buyerGstin) buyerGstin = customer.gstin || '';
+            if (!buyerAddress) buyerAddress = customer.address || '';
+        }
+    }
+
+    let placeOfSupply = req.body.placeOfSupply || '';
+    if (isGst && !placeOfSupply) {
+        placeOfSupply = buyerGstin
+            ? stateCodeFromGstin(buyerGstin)
+            : stateCodeFromGstin(business.gstin);
+    }
+
+    const gst = computeGst(
+        items.map((it) => ({ amount: it.qty * it.rate, gstRate: Number(it.gstRate) || 0 })),
+        discount || 0,
+        isGst,
+        isIntraState(business.gstin, placeOfSupply)
+    );
 
     const sale = await Sale.create({
         businessId: req.businessId,
         items,
         discount: discount || 0,
-        tax: tax || 0,
+        tax: isGst ? gst.tax : tax || 0,
+        cgst: gst.cgst,
+        sgst: gst.sgst,
+        igst: gst.igst,
+        isGst,
+        buyerName,
+        buyerGstin,
+        buyerAddress,
+        placeOfSupply,
         paymentMethod,
         customerId: customerId || null,
         invoiceNumber,

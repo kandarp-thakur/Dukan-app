@@ -23,11 +23,18 @@ const createProduct = async (token, name = 'Rice 1kg', stockQty = 10) => {
     return res.body.data.product;
 };
 
-const createCustomer = async (token, name = 'Ramesh') => {
+const setBusinessGstin = async (token, gstin) => {
+    await request(app)
+        .patch('/api/v1/business')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ gstin });
+};
+
+const createCustomer = async (token, name = 'Ramesh', gstin = '', address = '') => {
     const res = await request(app)
         .post('/api/v1/customers')
         .set('Authorization', `Bearer ${token}`)
-        .send({ name, phone: '9812345678' });
+        .send({ name, phone: '9812345678', gstin, address });
     return res.body.data.customer;
 };
 
@@ -244,5 +251,121 @@ describe('Expenses API', () => {
             .set('Authorization', `Bearer ${dataB.accessToken}`)
             .send({ amount: 1 });
         expect(res.status).toBe(404);
+    });
+});
+
+describe('GST sales', () => {
+    it('creates an intra-state GST sale with buyer snapshot and CGST/SGST', async () => {
+        const data = await registerBusiness('G1');
+        await setBusinessGstin(data.accessToken, '27ABCDE1234F1Z5');
+        const customer = await createCustomer(
+            data.accessToken,
+            'Ramesh',
+            '27XYZAB5678C1Z9',
+            'MG Road, Pune'
+        );
+        const res = await request(app)
+            .post('/api/v1/sales')
+            .set('Authorization', `Bearer ${data.accessToken}`)
+            .send({
+                items: [{ name: 'Rice 1kg', qty: 2, rate: 5500, gstRate: 18, hsn: '1006' }],
+                isGst: true,
+                customerId: customer.id,
+                paymentMethod: 'cash',
+            });
+        expect(res.status).toBe(201);
+        const sale = res.body.data.sale;
+        expect(sale.isGst).toBe(true);
+        expect(sale.tax).toBe(1980);
+        expect(sale.cgst).toBe(990);
+        expect(sale.sgst).toBe(990);
+        expect(sale.igst).toBe(0);
+        expect(sale.total).toBe(12980);
+        expect(sale.buyerName).toBe('Ramesh');
+        expect(sale.buyerGstin).toBe('27XYZAB5678C1Z9');
+        expect(sale.buyerAddress).toBe('MG Road, Pune');
+        expect(sale.placeOfSupply).toBe('MH');
+    });
+
+    it('charges IGST for an inter-state GST sale', async () => {
+        const data = await registerBusiness('G2');
+        await setBusinessGstin(data.accessToken, '27ABCDE1234F1Z5');
+        const res = await request(app)
+            .post('/api/v1/sales')
+            .set('Authorization', `Bearer ${data.accessToken}`)
+            .send({
+                items: [{ name: 'Rice 1kg', qty: 2, rate: 5500, gstRate: 18, hsn: '1006' }],
+                isGst: true,
+                placeOfSupply: 'KA',
+                paymentMethod: 'cash',
+            });
+        expect(res.status).toBe(201);
+        expect(res.body.data.sale.igst).toBe(1980);
+        expect(res.body.data.sale.cgst).toBe(0);
+        expect(res.body.data.sale.sgst).toBe(0);
+    });
+
+    it('rejects a GST sale when the business has no GSTIN', async () => {
+        const data = await registerBusiness('G3');
+        const res = await request(app)
+            .post('/api/v1/sales')
+            .set('Authorization', `Bearer ${data.accessToken}`)
+            .send({
+                items: [{ name: 'Rice 1kg', qty: 1, rate: 5500, gstRate: 18, hsn: '1006' }],
+                isGst: true,
+                paymentMethod: 'cash',
+            });
+        expect(res.status).toBe(400);
+        expect(res.body.message).toMatch(/business GSTIN/i);
+    });
+
+    it('rejects a taxed item without an HSN code', async () => {
+        const data = await registerBusiness('G4');
+        await setBusinessGstin(data.accessToken, '27ABCDE1234F1Z5');
+        const res = await request(app)
+            .post('/api/v1/sales')
+            .set('Authorization', `Bearer ${data.accessToken}`)
+            .send({
+                items: [{ name: 'Rice 1kg', qty: 1, rate: 5500, gstRate: 18 }],
+                isGst: true,
+                paymentMethod: 'cash',
+            });
+        expect(res.status).toBe(400);
+        expect(res.body.message).toMatch(/HSN/i);
+    });
+
+    it('rejects an unsupported GST rate', async () => {
+        const data = await registerBusiness('G5');
+        await setBusinessGstin(data.accessToken, '27ABCDE1234F1Z5');
+        const res = await request(app)
+            .post('/api/v1/sales')
+            .set('Authorization', `Bearer ${data.accessToken}`)
+            .send({
+                items: [{ name: 'Rice 1kg', qty: 1, rate: 5500, gstRate: 7, hsn: '1006' }],
+                isGst: true,
+                paymentMethod: 'cash',
+            });
+        expect(res.status).toBe(400);
+    });
+
+    it('snapshots buyerName on a non-GST sale but keeps zero tax', async () => {
+        const data = await registerBusiness('G6');
+        const customer = await createCustomer(data.accessToken, 'Suresh');
+        const res = await request(app)
+            .post('/api/v1/sales')
+            .set('Authorization', `Bearer ${data.accessToken}`)
+            .send({
+                items: [{ name: 'Pen', qty: 2, rate: 1000 }],
+                paymentMethod: 'cash',
+                customerId: customer.id,
+            });
+        expect(res.status).toBe(201);
+        const sale = res.body.data.sale;
+        expect(sale.isGst).toBe(false);
+        expect(sale.cgst).toBe(0);
+        expect(sale.sgst).toBe(0);
+        expect(sale.igst).toBe(0);
+        expect(sale.total).toBe(2000);
+        expect(sale.buyerName).toBe('Suresh');
     });
 });
