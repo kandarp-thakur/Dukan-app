@@ -66,9 +66,13 @@ const rupeesToWords = (n) => {
 };
 
 export const amountToWords = (paise) => {
-    const rupees = Math.floor((paise || 0) / 100);
-    const remainder = Math.abs((paise || 0) % 100);
+    // Derive the magnitude before formatting so a negative input still reaches the
+    // `n === 0` base case in rupeesToWords; prefix the sign on the finished string.
+    const negative = paise < 0;
+    const abs = Math.abs(paise || 0);
+    const rupees = Math.floor(abs / 100);
+    const remainder = abs % 100;
     let out = `${rupeesToWords(rupees)} Rupees`;
     if (remainder) out += ` and ${twoDigitsToWords(remainder)} Paise`;
-    return `${out} Only`;
+    return `${negative ? '-' : ''}${out} Only`;
 };

@@ -150,4 +150,8 @@ describe('server money utils', () => {
         expect(amountToWords(10000000)).toBe('One Lakh Rupees Only');
         expect(amountToWords(19900)).toBe('One Hundred Ninety Nine Rupees Only');
     });
+
+    it('renders negative amounts with a leading sign', () => {
+        expect(amountToWords(-5000)).toBe('-Fifty Rupees Only');
+    });
 });
