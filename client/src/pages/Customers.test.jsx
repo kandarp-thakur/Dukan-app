@@ -48,7 +48,7 @@ describe('Customers page', () => {
         expect(screen.getByText('9876543210')).toBeInTheDocument();
     });
 
-    it('creates a customer', async () => {
+    it('creates a customer with GSTIN and address', async () => {
         customersApi.create.mockResolvedValue({ customer: {} });
         render(
             <MemoryRouter>
@@ -58,13 +58,31 @@ describe('Customers page', () => {
         await screen.findByText('Ramesh');
         fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Suresh' } });
         fireEvent.change(screen.getByLabelText('Phone'), { target: { value: '9999999999' } });
+        fireEvent.change(screen.getByLabelText('GSTIN'), { target: { value: '27XYZAB5678C1Z9' } });
+        fireEvent.change(screen.getByLabelText('Address'), { target: { value: 'MG Road' } });
         fireEvent.click(screen.getByRole('button', { name: /add customer/i }));
         await waitFor(() =>
             expect(customersApi.create).toHaveBeenCalledWith({
                 name: 'Suresh',
                 phone: '9999999999',
+                gstin: '27XYZAB5678C1Z9',
+                address: 'MG Road',
             })
         );
+    });
+
+    it('rejects an invalid GSTIN length', async () => {
+        render(
+            <MemoryRouter>
+                <Customers />
+            </MemoryRouter>
+        );
+        await screen.findByText('Ramesh');
+        fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Suresh' } });
+        fireEvent.change(screen.getByLabelText('GSTIN'), { target: { value: '123' } });
+        fireEvent.click(screen.getByRole('button', { name: /add customer/i }));
+        expect(await screen.findByText(/gstin must be 15 characters/i)).toBeInTheDocument();
+        expect(customersApi.create).not.toHaveBeenCalled();
     });
 
     it('links each customer to their khata statement', async () => {

@@ -10,7 +10,7 @@ export default function Customers() {
     const isOwner = user?.role === 'owner';
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [form, setForm] = useState({ name: '', phone: '' });
+    const [form, setForm] = useState({ name: '', phone: '', gstin: '', address: '' });
     const [error, setError] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [reloadKey, setReloadKey] = useState(0);
@@ -38,10 +38,19 @@ export default function Customers() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        if (form.gstin && form.gstin.length !== 15) {
+            setError('GSTIN must be 15 characters');
+            return;
+        }
         setSubmitting(true);
         try {
-            await customersApi.create({ name: form.name, phone: form.phone });
-            setForm({ name: '', phone: '' });
+            await customersApi.create({
+                name: form.name,
+                phone: form.phone,
+                gstin: form.gstin,
+                address: form.address,
+            });
+            setForm({ name: '', phone: '', gstin: '', address: '' });
             setReloadKey((k) => k + 1);
         } catch (err) {
             setError(err.response?.data?.message || 'Something went wrong');
@@ -90,6 +99,24 @@ export default function Customers() {
                             name="phone"
                             className="glass-input mt-1"
                             value={form.phone}
+                            onChange={setField}
+                        />
+                    </label>
+                    <label className="block text-sm font-medium">
+                        GSTIN
+                        <input
+                            name="gstin"
+                            className="glass-input mt-1"
+                            value={form.gstin}
+                            onChange={setField}
+                        />
+                    </label>
+                    <label className="block text-sm font-medium">
+                        Address
+                        <input
+                            name="address"
+                            className="glass-input mt-1"
+                            value={form.address}
                             onChange={setField}
                         />
                     </label>
