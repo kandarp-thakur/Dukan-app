@@ -89,6 +89,7 @@ describe('downloadBlob', () => {
         expect(click).toHaveBeenCalledTimes(1);
         expect(anchor.remove).toHaveBeenCalledTimes(1);
         expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:fake');
+        expect(appendChild).toHaveBeenCalledWith(anchor);
         createElement.mockRestore();
         appendChild.mockRestore();
     });
