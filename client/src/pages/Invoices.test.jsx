@@ -72,6 +72,20 @@ describe('Invoices page', () => {
         );
     });
 
+    it('maps the date range end to the end of the selected local day', async () => {
+        renderPage();
+        await screen.findByText('INV-1');
+        const to = '2026-09-10';
+        fireEvent.change(screen.getByLabelText('To'), { target: { value: to } });
+        await waitFor(() =>
+            expect(invoicesApi.list).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    to: new Date(`${to}T23:59:59.999`).toISOString(),
+                })
+            )
+        );
+    });
+
     it('shows the empty state', async () => {
         invoicesApi.list.mockResolvedValue({ invoices: [] });
         renderPage();

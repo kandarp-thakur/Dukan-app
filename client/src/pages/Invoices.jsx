@@ -28,8 +28,8 @@ export default function Invoices() {
             const params = {};
             if (debouncedQ) params.q = debouncedQ;
             if (type) params.type = type;
-            if (from) params.from = new Date(from).toISOString();
-            if (to) params.to = new Date(to).toISOString();
+            if (from) params.from = new Date(`${from}T00:00:00`).toISOString();
+            if (to) params.to = new Date(`${to}T23:59:59.999`).toISOString();
             try {
                 const data = await invoicesApi.list(params);
                 if (!cancelled) {
