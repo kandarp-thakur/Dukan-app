@@ -6,6 +6,21 @@ const {
 } = require('../src/utils/shareToken');
 
 describe('shareToken utils', () => {
+    // The URL test below mutates process.env.SHARE_LINK_BASE_URL. The suite runs with
+    // --runInBand, so all test files share one process; capture the prior value here and
+    // restore it after each test so the mutation cannot leak into later files. If the var
+    // was originally unset we delete the key rather than storing the string 'undefined'.
+    const originalBaseUrl = process.env.SHARE_LINK_BASE_URL;
+    const hadBaseUrl = Object.prototype.hasOwnProperty.call(process.env, 'SHARE_LINK_BASE_URL');
+
+    afterEach(() => {
+        if (hadBaseUrl) {
+            process.env.SHARE_LINK_BASE_URL = originalBaseUrl;
+        } else {
+            delete process.env.SHARE_LINK_BASE_URL;
+        }
+    });
+
     it('generates a 43-character base64url token', () => {
         const token = generateShareToken();
         expect(token).toHaveLength(43);
