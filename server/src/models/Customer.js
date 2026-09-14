@@ -12,6 +12,7 @@ const customerSchema = new mongoose.Schema(
         phone: { type: String, default: '' },
         gstin: { type: String, default: '' },
         address: { type: String, default: '' },
+        email: { type: String, default: '', lowercase: true, trim: true },
         balance: { type: Number, default: 0 },
     },
     { timestamps: true }

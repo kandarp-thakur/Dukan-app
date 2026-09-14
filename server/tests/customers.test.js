@@ -96,6 +96,29 @@ describe('Customers API', () => {
             .send({ name: 'Ramesh', gstin: '123' });
         expect(res.status).toBe(400);
     });
+
+    it('stores a customer email in lower case and returns it', async () => {
+        const data = await registerBusiness('Email');
+        const res = await request(app)
+            .post('/api/v1/customers')
+            .set('Authorization', `Bearer ${data.accessToken}`)
+            .send({ name: 'Ramesh', email: '  Ramesh@Example.COM  ' });
+
+        expect(res.status).toBe(201);
+        expect(res.body.data.customer.email).toBe('ramesh@example.com');
+    });
+
+    it('updates a customer email', async () => {
+        const data = await registerBusiness('EmailUpdate');
+        const created = await createCustomer(data.accessToken, 'Suresh');
+        const res = await request(app)
+            .patch(`/api/v1/customers/${created.id}`)
+            .set('Authorization', `Bearer ${data.accessToken}`)
+            .send({ email: 'SURESH@Example.com' });
+
+        expect(res.status).toBe(200);
+        expect(res.body.data.customer.email).toBe('suresh@example.com');
+    });
 });
 
 describe('Khata API', () => {

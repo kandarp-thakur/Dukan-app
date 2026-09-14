@@ -16,6 +16,7 @@ router.post(
     tenantScope,
     body('name').trim().notEmpty().withMessage('Customer name is required'),
     body('phone').optional({ values: 'falsy' }).trim(),
+    body('email').optional({ values: 'falsy' }).trim().isEmail().withMessage('A valid email is required'),
     body('gstin')
         .optional({ values: 'falsy' })
         .trim()
@@ -32,6 +33,7 @@ router.patch(
     tenantScope,
     body('name').optional().trim().notEmpty().withMessage('Customer name cannot be empty'),
     body('phone').optional({ values: 'falsy' }).trim(),
+    body('email').optional({ values: 'falsy' }).trim().isEmail().withMessage('A valid email is required'),
     body('gstin')
         .optional({ values: 'falsy' })
         .trim()

@@ -43,6 +43,8 @@ const saleSchema = new mongoose.Schema(
         invoiceNumber: { type: String, default: '' },
         status: { type: String, enum: ['completed', 'cancelled'], default: 'completed' },
         date: { type: Date, default: Date.now, index: true },
+        shareToken: { type: String, default: '', index: true },
+        shareTokenExpiresAt: { type: Date, default: null },
     },
     { timestamps: true }
 );

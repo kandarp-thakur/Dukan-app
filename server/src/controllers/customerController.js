@@ -29,11 +29,12 @@ exports.listCustomers = async (req, res) => {
 };
 
 exports.createCustomer = async (req, res) => {
-    const { name, phone, gstin, address } = req.body;
+    const { name, phone, email, gstin, address } = req.body;
     const customer = await Customer.create({
         businessId: req.businessId,
         name,
         phone: phone || '',
+        email: email || '',
         gstin: gstin || '',
         address: address || '',
     });
@@ -41,7 +42,7 @@ exports.createCustomer = async (req, res) => {
 };
 
 exports.updateCustomer = async (req, res) => {
-    const allowed = ['name', 'phone', 'gstin', 'address'];
+    const allowed = ['name', 'phone', 'email', 'gstin', 'address'];
     const updates = {};
     for (const key of allowed) {
         if (req.body[key] !== undefined) {
