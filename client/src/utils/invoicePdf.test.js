@@ -78,6 +78,9 @@ describe('downloadBlob', () => {
         const click = vi.fn();
         const anchor = { href: '', download: '', click, remove: vi.fn() };
         const createElement = vi.spyOn(document, 'createElement').mockReturnValue(anchor);
+        // The mocked anchor is a plain object, not a DOM Node, so short-circuit
+        // the real Node.appendChild to keep it out of jsdom.
+        const appendChild = vi.spyOn(document.body, 'appendChild').mockReturnValue(undefined);
 
         downloadBlob(new Blob(['x']), 'INV-1.pdf');
 
@@ -87,6 +90,7 @@ describe('downloadBlob', () => {
         expect(anchor.remove).toHaveBeenCalledTimes(1);
         expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:fake');
         createElement.mockRestore();
+        appendChild.mockRestore();
     });
 });
 
