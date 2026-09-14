@@ -3,17 +3,24 @@ import { Link } from 'react-router-dom';
 import { salesApi, customersApi } from '../api/endpoints';
 import { formatINR, rupeesToPaise } from '../utils/money';
 import { formatDate } from '../utils/format';
+import { computeGst, isIntraState, stateCodeFromGstin, INDIAN_STATES, GST_RATES } from '../utils/gst';
+import { useAuth } from '../context/AuthContext';
 import { Receipt } from 'lucide-react';
 
-const EMPTY_ITEM = { name: '', qty: '', rate: '' };
+const EMPTY_ITEM = { name: '', qty: '', rate: '', gstRate: 0, hsn: '' };
 
 export default function Sales() {
+    const { business } = useAuth();
     const [sales, setSales] = useState([]);
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [item, setItem] = useState(EMPTY_ITEM);
     const [discount, setDiscount] = useState('');
-    const [tax, setTax] = useState('');
+    const [isGst, setIsGst] = useState(false);
+    const [buyerName, setBuyerName] = useState('');
+    const [buyerGstin, setBuyerGstin] = useState('');
+    const [buyerAddress, setBuyerAddress] = useState('');
+    const [placeOfSupply, setPlaceOfSupply] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('cash');
     const [customerId, setCustomerId] = useState('');
     const [error, setError] = useState('');
@@ -44,7 +51,49 @@ export default function Sales() {
         };
     }, [reloadKey]);
 
+    // Auto-fill buyer fields from the selected customer (editable after).
+    useEffect(() => {
+        if (!customerId) return;
+        const c = customers.find((x) => x.id === customerId);
+        if (!c) return;
+        setBuyerName(c.name || '');
+        setBuyerGstin(c.gstin || '');
+        setBuyerAddress(c.address || '');
+    }, [customerId, customers]);
+
+    // Derive place of supply from buyer GSTIN, else the business GSTIN.
+    useEffect(() => {
+        const code = buyerGstin
+            ? stateCodeFromGstin(buyerGstin)
+            : stateCodeFromGstin(business?.gstin || '');
+        setPlaceOfSupply(code);
+    }, [buyerGstin, business]);
+
     const setItemField = (e) => setItem({ ...item, [e.target.name]: e.target.value });
+
+    const preview = computeGst(
+        [
+            {
+                amount: (Number(item.qty) || 0) * rupeesToPaise(item.rate),
+                gstRate: isGst ? Number(item.gstRate) || 0 : 0,
+            },
+        ],
+        rupeesToPaise(discount),
+        isGst,
+        isIntraState(business?.gstin || '', placeOfSupply)
+    );
+
+    const resetForm = () => {
+        setItem(EMPTY_ITEM);
+        setDiscount('');
+        setIsGst(false);
+        setBuyerName('');
+        setBuyerGstin('');
+        setBuyerAddress('');
+        setPlaceOfSupply('');
+        setPaymentMethod('cash');
+        setCustomerId('');
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -55,25 +104,28 @@ export default function Sales() {
         }
         setSubmitting(true);
         try {
+            const line = {
+                name: item.name,
+                qty: Number(item.qty),
+                rate: rupeesToPaise(item.rate),
+                gstRate: isGst ? Number(item.gstRate) || 0 : 0,
+            };
+            if (isGst && item.hsn) line.hsn = item.hsn;
             const payload = {
-                items: [
-                    {
-                        name: item.name,
-                        qty: Number(item.qty),
-                        rate: rupeesToPaise(item.rate),
-                    },
-                ],
+                items: [line],
                 discount: rupeesToPaise(discount),
-                tax: rupeesToPaise(tax),
+                isGst,
                 paymentMethod,
             };
+            if (isGst) {
+                if (buyerName) payload.buyerName = buyerName;
+                if (buyerGstin) payload.buyerGstin = buyerGstin;
+                if (buyerAddress) payload.buyerAddress = buyerAddress;
+                if (placeOfSupply) payload.placeOfSupply = placeOfSupply;
+            }
             if (customerId) payload.customerId = customerId;
             await salesApi.create(payload);
-            setItem(EMPTY_ITEM);
-            setDiscount('');
-            setTax('');
-            setPaymentMethod('cash');
-            setCustomerId('');
+            resetForm();
             setReloadKey((k) => k + 1);
         } catch (err) {
             setError(err.response?.data?.message || 'Something went wrong');
@@ -105,6 +157,24 @@ export default function Sales() {
             )}
             <div className="glass p-6">
                 <h2 className="mb-4 text-lg font-semibold">New sale</h2>
+                <div className="mb-4 flex gap-2">
+                    <button
+                        type="button"
+                        onClick={() => setIsGst(false)}
+                        aria-pressed={!isGst}
+                        className={isGst ? 'btn-ghost' : 'btn-primary'}
+                    >
+                        Non-GST
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setIsGst(true)}
+                        aria-pressed={isGst}
+                        className={isGst ? 'btn-primary' : 'btn-ghost'}
+                    >
+                        GST invoice
+                    </button>
+                </div>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="flex flex-wrap gap-4">
                         <label className="block min-w-48 flex-1 text-sm font-medium">
@@ -143,6 +213,34 @@ export default function Sales() {
                                 required
                             />
                         </label>
+                        {isGst && (
+                            <>
+                                <label className="block w-32 text-sm font-medium">
+                                    GST rate
+                                    <select
+                                        name="gstRate"
+                                        className="glass-input mt-1"
+                                        value={item.gstRate}
+                                        onChange={setItemField}
+                                    >
+                                        {GST_RATES.map((r) => (
+                                            <option key={r} value={r}>
+                                                {r}%
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+                                <label className="block w-32 text-sm font-medium">
+                                    HSN code
+                                    <input
+                                        name="hsn"
+                                        className="glass-input mt-1"
+                                        value={item.hsn}
+                                        onChange={setItemField}
+                                    />
+                                </label>
+                            </>
+                        )}
                     </div>
                     <div className="flex flex-wrap gap-4">
                         <label className="block w-32 text-sm font-medium">
@@ -154,17 +252,6 @@ export default function Sales() {
                                 className="glass-input mt-1"
                                 value={discount}
                                 onChange={(e) => setDiscount(e.target.value)}
-                            />
-                        </label>
-                        <label className="block w-32 text-sm font-medium">
-                            Tax (₹)
-                            <input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                className="glass-input mt-1"
-                                value={tax}
-                                onChange={(e) => setTax(e.target.value)}
                             />
                         </label>
                         <label className="block w-40 text-sm font-medium">
@@ -195,6 +282,74 @@ export default function Sales() {
                                 ))}
                             </select>
                         </label>
+                    </div>
+                    {isGst && (
+                        <div className="flex flex-wrap gap-4">
+                            <label className="block min-w-48 flex-1 text-sm font-medium">
+                                Buyer name
+                                <input
+                                    className="glass-input mt-1"
+                                    value={buyerName}
+                                    onChange={(e) => setBuyerName(e.target.value)}
+                                />
+                            </label>
+                            <label className="block w-56 text-sm font-medium">
+                                Buyer GSTIN
+                                <input
+                                    className="glass-input mt-1"
+                                    value={buyerGstin}
+                                    onChange={(e) => setBuyerGstin(e.target.value)}
+                                />
+                            </label>
+                            <label className="block min-w-48 flex-1 text-sm font-medium">
+                                Buyer address
+                                <input
+                                    className="glass-input mt-1"
+                                    value={buyerAddress}
+                                    onChange={(e) => setBuyerAddress(e.target.value)}
+                                />
+                            </label>
+                            <label className="block w-56 text-sm font-medium">
+                                Place of supply
+                                <select
+                                    className="glass-input mt-1"
+                                    value={placeOfSupply}
+                                    onChange={(e) => setPlaceOfSupply(e.target.value)}
+                                >
+                                    <option value="">— select —</option>
+                                    {Object.entries(INDIAN_STATES).map(([code, name]) => (
+                                        <option key={code} value={code}>
+                                            {code} — {name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+                        </div>
+                    )}
+                    <div className="rounded-xl bg-white/50 px-4 py-3 text-sm text-gray-600">
+                        <span className="mr-4">
+                            Subtotal <span className="font-semibold">{formatINR(preview.taxableValue + rupeesToPaise(discount))}</span>
+                        </span>
+                        <span className="mr-4">
+                            Discount <span className="font-semibold">{formatINR(rupeesToPaise(discount))}</span>
+                        </span>
+                        {isGst && preview.igst > 0 && (
+                            <span className="mr-4">
+                                IGST <span className="font-semibold">{formatINR(preview.igst)}</span>
+                            </span>
+                        )}
+                        {isGst && preview.igst === 0 && (
+                            <span className="mr-4">
+                                CGST <span className="font-semibold">{formatINR(preview.cgst)}</span> · SGST{' '}
+                                <span className="font-semibold">{formatINR(preview.sgst)}</span>
+                            </span>
+                        )}
+                        <span>
+                            Total{' '}
+                            <span className="font-semibold text-primary">
+                                {formatINR(preview.taxableValue + preview.tax)}
+                            </span>
+                        </span>
                     </div>
                     <button type="submit" disabled={submitting} className="btn-primary">
                         Record sale
@@ -260,7 +415,7 @@ export default function Sales() {
                                     <td className="text-right">
                                         <div className="flex justify-end gap-2">
                                             <Link
-                                                to={`/sales/${s.id}`}
+                                                to={`/invoices/${s.id}`}
                                                 className="btn-ghost px-3 py-1.5 text-xs"
                                             >
                                                 Invoice

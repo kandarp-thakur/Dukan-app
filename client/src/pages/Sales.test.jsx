@@ -95,9 +95,9 @@ describe('Sales page', () => {
         fireEvent.click(screen.getByRole('button', { name: /record sale/i }));
         await waitFor(() =>
             expect(salesApi.create).toHaveBeenCalledWith({
-                items: [{ name: 'Parle-G Biscuit', qty: 2, rate: 700 }],
+                items: [{ name: 'Parle-G Biscuit', qty: 2, rate: 700, gstRate: 0 }],
                 discount: 0,
-                tax: 0,
+                isGst: false,
                 paymentMethod: 'cash',
             })
         );
@@ -135,11 +135,37 @@ describe('Sales page', () => {
         fireEvent.click(screen.getByRole('button', { name: /record sale/i }));
         await waitFor(() =>
             expect(salesApi.create).toHaveBeenCalledWith({
-                items: [{ name: 'Parle-G Biscuit', qty: 1, rate: 700 }],
+                items: [{ name: 'Parle-G Biscuit', qty: 1, rate: 700, gstRate: 0 }],
                 discount: 0,
-                tax: 0,
+                isGst: false,
                 paymentMethod: 'credit',
                 customerId: 'c1',
+            })
+        );
+    });
+
+    it('creates a GST sale with rate, HSN and derived place of supply', async () => {
+        salesApi.create.mockResolvedValue({ sale });
+        render(
+            <MemoryRouter>
+                <Sales />
+            </MemoryRouter>
+        );
+        await screen.findByText('INV-1');
+        fireEvent.change(screen.getByLabelText('Item name'), { target: { value: 'Rice' } });
+        fireEvent.change(screen.getByLabelText('Qty'), { target: { value: '1' } });
+        fireEvent.change(screen.getByLabelText('Rate (₹)'), { target: { value: '100' } });
+        fireEvent.click(screen.getByRole('button', { name: 'GST invoice' }));
+        fireEvent.change(screen.getByLabelText('GST rate'), { target: { value: '18' } });
+        fireEvent.change(screen.getByLabelText('HSN code'), { target: { value: '1006' } });
+        fireEvent.click(screen.getByRole('button', { name: /record sale/i }));
+        await waitFor(() =>
+            expect(salesApi.create).toHaveBeenCalledWith({
+                items: [{ name: 'Rice', qty: 1, rate: 10000, gstRate: 18, hsn: '1006' }],
+                discount: 0,
+                isGst: true,
+                paymentMethod: 'cash',
+                placeOfSupply: 'MH',
             })
         );
     });
