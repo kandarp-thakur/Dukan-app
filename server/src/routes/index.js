@@ -16,5 +16,7 @@ router.use('/dashboard', require('./dashboardRoutes'));
 router.use('/reports', require('./reportRoutes'));
 router.use('/users', require('./userRoutes'));
 router.use('/plans', require('./planRoutes'));
+router.use('/public', require('./publicRoutes'));
+router.use('/config', require('./configRoutes'));
 
 module.exports = router;
