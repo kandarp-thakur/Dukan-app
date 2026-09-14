@@ -21,10 +21,6 @@ vi.mock('../api/endpoints', () => ({
     },
 }));
 
-vi.mock('react-to-print', () => ({
-    useReactToPrint: () => vi.fn(),
-}));
-
 const mockAuth = {
     user: { role: 'owner', name: 'Owner' },
     business: { name: 'Local Test Shop', address: 'Main Road, Pune', gstin: '27ABCDE1234F1Z5' },
@@ -184,20 +180,16 @@ describe('Sales page', () => {
     });
 });
 
-describe('SaleDetail invoice', () => {
+describe('SaleDetail summary', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         salesApi.get.mockResolvedValue({ sale });
     });
 
-    it('renders the invoice with business header, items, totals and amount in words', async () => {
+    it('links to the dedicated invoice view', async () => {
         renderDetail();
         expect(await screen.findByText('INV-1')).toBeInTheDocument();
-        expect(screen.getAllByText('Local Test Shop').length).toBeGreaterThan(0);
-        expect(screen.getByText(/27ABCDE1234F1Z5/)).toBeInTheDocument();
-        expect(screen.getByText('Parle-G Biscuit')).toBeInTheDocument();
-        expect(screen.getAllByText('₹14').length).toBeGreaterThan(0);
-        expect(screen.getByText(/fourteen rupees only/i)).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /print invoice/i })).toBeInTheDocument();
+        const link = screen.getByRole('link', { name: /view invoice/i });
+        expect(link).toHaveAttribute('href', '/invoices/s1');
     });
 });
