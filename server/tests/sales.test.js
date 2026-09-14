@@ -287,6 +287,26 @@ describe('GST sales', () => {
         expect(sale.placeOfSupply).toBe('MH');
     });
 
+    it('falls back to the business state when the buyer GSTIN state code is unknown', async () => {
+        const data = await registerBusiness('G7');
+        await setBusinessGstin(data.accessToken, '27ABCDE1234F1Z5');
+        const res = await request(app)
+            .post('/api/v1/sales')
+            .set('Authorization', `Bearer ${data.accessToken}`)
+            .send({
+                items: [{ name: 'Rice 1kg', qty: 2, rate: 5500, gstRate: 18, hsn: '1006' }],
+                isGst: true,
+                buyerGstin: 'ZZABCDE1234F1Z5',
+                paymentMethod: 'cash',
+            });
+        expect(res.status).toBe(201);
+        const sale = res.body.data.sale;
+        expect(sale.placeOfSupply).toBe('MH');
+        expect(sale.cgst).toBe(990);
+        expect(sale.sgst).toBe(990);
+        expect(sale.igst).toBe(0);
+    });
+
     it('charges IGST for an inter-state GST sale', async () => {
         const data = await registerBusiness('G2');
         await setBusinessGstin(data.accessToken, '27ABCDE1234F1Z5');

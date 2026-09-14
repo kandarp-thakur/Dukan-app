@@ -94,9 +94,8 @@ exports.createSale = async (req, res) => {
 
     let placeOfSupply = req.body.placeOfSupply || '';
     if (isGst && !placeOfSupply) {
-        placeOfSupply = buyerGstin
-            ? stateCodeFromGstin(buyerGstin)
-            : stateCodeFromGstin(business.gstin);
+        const derivedBuyerCode = buyerGstin ? stateCodeFromGstin(buyerGstin) : '';
+        placeOfSupply = derivedBuyerCode || stateCodeFromGstin(business.gstin);
     }
 
     const gst = computeGst(

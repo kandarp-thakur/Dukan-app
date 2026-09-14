@@ -11,6 +11,7 @@ describe('gst utils', () => {
         expect(stateCodeFromGstin('29ABCDE1234F1Z5')).toBe('KA');
         expect(stateCodeFromGstin('')).toBe('');
         expect(stateCodeFromGstin('ZZ')).toBe('');
+        expect(stateCodeFromGstin('25ABCDE1234F1Z5')).toBe('DN');
     });
 
     it('detects intra-state supply', () => {

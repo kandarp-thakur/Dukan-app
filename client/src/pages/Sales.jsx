@@ -61,12 +61,11 @@ export default function Sales() {
         setBuyerAddress(c.address || '');
     }, [customerId, customers]);
 
-    // Derive place of supply from buyer GSTIN, else the business GSTIN.
+    // Derive place of supply from buyer GSTIN, falling back to the business
+    // GSTIN when the buyer GSTIN is absent or its state prefix is unknown.
     useEffect(() => {
-        const code = buyerGstin
-            ? stateCodeFromGstin(buyerGstin)
-            : stateCodeFromGstin(business?.gstin || '');
-        setPlaceOfSupply(code);
+        const derived = buyerGstin ? stateCodeFromGstin(buyerGstin) : '';
+        setPlaceOfSupply(derived || stateCodeFromGstin(business?.gstin || ''));
     }, [buyerGstin, business]);
 
     const setItemField = (e) => setItem({ ...item, [e.target.name]: e.target.value });

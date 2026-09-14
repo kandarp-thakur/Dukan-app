@@ -166,6 +166,35 @@ describe('Sales page', () => {
         );
     });
 
+    it('previews CGST/SGST when the buyer GSTIN state code is unknown', async () => {
+        salesApi.create.mockResolvedValue({ sale });
+        render(
+            <MemoryRouter>
+                <Sales />
+            </MemoryRouter>
+        );
+        await screen.findByText('INV-1');
+        fireEvent.change(screen.getByLabelText('Item name'), { target: { value: 'Rice' } });
+        fireEvent.change(screen.getByLabelText('Qty'), { target: { value: '1' } });
+        fireEvent.change(screen.getByLabelText('Rate (₹)'), { target: { value: '100' } });
+        fireEvent.click(screen.getByRole('button', { name: 'GST invoice' }));
+        fireEvent.change(screen.getByLabelText('GST rate'), { target: { value: '18' } });
+        fireEvent.change(screen.getByLabelText('HSN code'), { target: { value: '1006' } });
+        fireEvent.change(screen.getByLabelText('Buyer GSTIN'), {
+            target: { value: 'ZZABCDE1234F1Z5' },
+        });
+        // The unknown buyer prefix must fall back to the seller (business) state,
+        // so the preview splits CGST/SGST instead of silently charging IGST.
+        expect(await screen.findByText(/CGST/)).toBeInTheDocument();
+        expect(screen.queryByText(/IGST/)).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: /record sale/i }));
+        await waitFor(() =>
+            expect(salesApi.create).toHaveBeenCalledWith(
+                expect.objectContaining({ isGst: true, placeOfSupply: 'MH' })
+            )
+        );
+    });
+
     it('cancels a sale after confirmation', async () => {
         salesApi.cancel.mockResolvedValue({ sale: { ...sale, status: 'cancelled' } });
         window.confirm = vi.fn().mockReturnValue(true);

@@ -5,6 +5,7 @@ describe('gst utils (client)', () => {
     it('maps a GSTIN to its alpha-2 state code', () => {
         expect(stateCodeFromGstin('27ABCDE1234F1Z5')).toBe('MH');
         expect(stateCodeFromGstin('')).toBe('');
+        expect(stateCodeFromGstin('25ABCDE1234F1Z5')).toBe('DN');
     });
 
     it('detects intra-state supply', () => {
