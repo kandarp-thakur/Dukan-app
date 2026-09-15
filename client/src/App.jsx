@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AppShell from './components/AppShell';
+import RequireOwner from './components/RequireOwner';
 import Staff from './pages/Staff';
 import Settings from './pages/Settings';
 import Subscription from './pages/Subscription';
@@ -49,10 +50,12 @@ function ProtectedRoutes() {
         <Route path="/suppliers" element={<Suppliers />} />
         <Route path="/suppliers/:id" element={<SupplierDetail />} />
         <Route path="/products" element={<Products />} />
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/staff" element={<Staff />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/subscription" element={<Subscription />} />
+        <Route element={<RequireOwner />}>
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/staff" element={<Staff />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/subscription" element={<Subscription />} />
+        </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Route>
     </Routes>

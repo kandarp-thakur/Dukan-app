@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
 import { plansApi, businessApi } from '../api/endpoints';
 import { formatINR } from '../utils/money';
-import { useAuth } from '../context/AuthContext';
 import { Crown, Check } from 'lucide-react';
 
 export default function Subscription() {
-    const { user } = useAuth();
     const [plans, setPlans] = useState([]);
     const [currentPlan, setCurrentPlan] = useState('');
     const [error, setError] = useState('');
@@ -77,8 +75,8 @@ export default function Subscription() {
                             <div
                                 key={plan.id}
                                 className={`rounded-2xl p-[2px] ${isCurrent
-                                        ? 'bg-gradient-to-r from-primary to-accent shadow-btn-glow'
-                                        : 'bg-white/60'
+                                    ? 'bg-gradient-to-r from-primary to-accent shadow-btn-glow'
+                                    : 'bg-white/60'
                                     }`}
                             >
                                 <div className="glass h-full p-6">
@@ -117,9 +115,6 @@ export default function Subscription() {
                 </div>
             )}
 
-            {!loading && user?.role !== 'owner' && (
-                <p className="text-center text-sm text-gray-400">Only the owner can manage the subscription.</p>
-            )}
         </div>
     );
 }
