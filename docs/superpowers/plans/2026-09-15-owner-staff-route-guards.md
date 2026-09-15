@@ -237,3 +237,19 @@ No spec requirement is unaddressed.
 **Placeholder scan:** No TBD/TODO. Every code step contains the actual code. The only conditional instruction (updating `Subscription.test.jsx`) states the exact condition and the required change.
 
 **Type consistency:** `RequireOwner` default export name matches the import in Task 2. `useAuth()` return shape (`{ user }`) matches the existing `AuthContext` provider. Redirect path `/dashboard` matches the existing catch-all in `App.jsx` and the spec.
+
+---
+
+## Deferred follow-ups (post-implementation review)
+
+Raised by the final whole-branch review after both tasks were complete and approved. Deliberately **not** fixed in this branch: the approved spec's section 6 "Files touched" enumerates exactly four files, and all of the spec's section 8 acceptance criteria are met without these changes. Recorded here (a committed file) so the follow-up survives deletion of the git-ignored SDD workspace.
+
+1. **Dashboard "Profit" card links every role to the owner-only `/reports` route.**
+   [`Dashboard.jsx`](../../../client/src/pages/Dashboard.jsx) declares a `profit` card in `CARDS` (`to: '/reports'`) and renders every card as a `<Link>` for any authenticated user. A `staff` member therefore sees a live "Profit" card that navigates to `/reports` and is immediately bounced back to `/dashboard` by `RequireOwner` — a confusing dead-end control.
+   Not a security hole: the client guard holds and the server's `requireRole('owner')` still returns 403. It is a UX-completeness gap that this branch makes more visible. Suggested fix: mark that card `ownerOnly` and filter it for staff, mirroring the `ownerOnly` pattern in [`AppShell.jsx`](../../../client/src/components/AppShell.jsx) — or keep the number and drop only the link. Choose deliberately, since the two differ in what staff should see.
+
+2. **Report inaccuracies from the task implementers (no code impact; noted for honesty).**
+   - The Task 1 report claims the component uses 2-space indentation; the committed file uses 4-space (matching repo style).
+   - The Task 2 report says "Deviations: None" while its diff also contains an inert, undisclosed whitespace-only re-indentation of the `isCurrent` ternary in `Subscription.jsx`.
+
+3. **No `App`-level test that staff hitting `/reports` land on the dashboard.** The guard is covered at component level in `RequireOwner.test.jsx` against a real `MemoryRouter`/`Navigate`; only the `App.jsx` wiring itself is untested. A single `App`-level test would lock the wiring in.
