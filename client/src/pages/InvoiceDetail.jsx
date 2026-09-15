@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
-import { invoicesApi } from '../api/endpoints';
+import { configApi, invoicesApi } from '../api/endpoints';
 import { formatINR } from '../utils/money';
 import { FileText } from 'lucide-react';
 import InvoiceDocument from '../components/InvoiceDocument';
+import SendInvoiceDialog from '../components/SendInvoiceDialog';
 
 export default function InvoiceDetail() {
     const { id } = useParams();
@@ -13,7 +14,10 @@ export default function InvoiceDetail() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
+    const [emailEnabled, setEmailEnabled] = useState(false);
+    const [dialogOpen, setDialogOpen] = useState(false);
     const printRef = useRef(null);
+    const pdfRef = useRef(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -35,6 +39,22 @@ export default function InvoiceDetail() {
             cancelled = true;
         };
     }, [id]);
+
+    useEffect(() => {
+        let cancelled = false;
+        const load = async () => {
+            try {
+                const features = await configApi.features();
+                if (!cancelled) setEmailEnabled(Boolean(features.email));
+            } catch {
+                if (!cancelled) setEmailEnabled(false);
+            }
+        };
+        load();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     const handlePrint = useReactToPrint({
         content: () => printRef.current,
@@ -75,6 +95,9 @@ export default function InvoiceDetail() {
                             <button onClick={handleShare} className="btn-ghost">
                                 Share
                             </button>
+                            <button onClick={() => setDialogOpen(true)} className="btn-ghost">
+                                Send invoice
+                            </button>
                             <button onClick={handlePrint} className="btn-primary">
                                 Print invoice
                             </button>
@@ -101,6 +124,33 @@ export default function InvoiceDetail() {
                         <InvoiceDocument invoice={invoice} business={business} variant="screen" />
                     </div>
                 )
+            )}
+            {dialogOpen && invoice && (
+                <>
+                    <SendInvoiceDialog
+                        invoice={invoice}
+                        business={business}
+                        defaultEmail=""
+                        defaultPhone=""
+                        emailEnabled={emailEnabled}
+                        getElement={() => pdfRef.current}
+                        onClose={() => setDialogOpen(false)}
+                    />
+                    {/* position:fixed offscreen, NOT display:none — html2canvas needs layout */}
+                    <div
+                        ref={pdfRef}
+                        aria-hidden="true"
+                        style={{
+                            position: 'fixed',
+                            left: '-10000px',
+                            top: 0,
+                            width: '794px',
+                            background: '#ffffff',
+                        }}
+                    >
+                        <InvoiceDocument invoice={invoice} business={business} variant="print" />
+                    </div>
+                </>
             )}
         </div>
     );

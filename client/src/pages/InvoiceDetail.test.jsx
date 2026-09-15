@@ -9,6 +9,10 @@ vi.mock('../api/endpoints', () => ({
         list: vi.fn(),
         get: vi.fn(),
     },
+    // Declared because the page reads the email feature flag on mount.
+    configApi: {
+        features: vi.fn().mockResolvedValue({ email: true }),
+    },
 }));
 
 vi.mock('react-to-print', () => ({
