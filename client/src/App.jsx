@@ -18,6 +18,7 @@ import InvoiceDetail from './pages/InvoiceDetail';
 import Expenses from './pages/Expenses';
 import Dashboard from './pages/Dashboard';
 import Reports from './pages/Reports';
+import PublicInvoice from './pages/PublicInvoice';
 
 function ProtectedRoutes() {
   const { user, loading } = useAuth();
@@ -65,6 +66,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/i/:token" element={<PublicInvoice />} />
           <Route path="/*" element={<ProtectedRoutes />} />
         </Routes>
       </BrowserRouter>
