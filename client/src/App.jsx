@@ -20,6 +20,8 @@ import Expenses from './pages/Expenses';
 import Dashboard from './pages/Dashboard';
 import Reports from './pages/Reports';
 import PublicInvoice from './pages/PublicInvoice';
+import PublicLayout from './components/PublicLayout';
+import LandingPage from './pages/LandingPage';
 
 function ProtectedRoutes() {
   const { user, loading } = useAuth();
@@ -67,8 +69,11 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route element={<PublicLayout />}>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+          </Route>
           <Route path="/i/:token" element={<PublicInvoice />} />
           <Route path="/*" element={<ProtectedRoutes />} />
         </Routes>
