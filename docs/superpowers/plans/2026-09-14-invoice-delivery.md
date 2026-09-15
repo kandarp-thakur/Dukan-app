@@ -35,6 +35,7 @@
 | File | Responsibility |
 |---|---|
 | `server/src/utils/shareToken.js` | Generate/expire/format the public share token |
+| `server/src/utils/money.js` | `formatINR()` / `amountToWords()` — server twin of the client money util (ruling R1) |
 | `server/src/services/emailService.js` | The single SMTP seam: `isEmailConfigured()`, `sendInvoiceEmail()` |
 | `server/src/services/emailTemplates.js` | `invoiceEmailHtml()` — the email body |
 | `server/src/middleware/pdfUpload.js` | Multer memory upload for the PDF attachment (5 MB, `application/pdf`) |
@@ -297,6 +298,7 @@ git commit -m "feat: add share token util and customer email field"
 **Files:**
 - Create: `server/src/services/emailService.js`
 - Create: `server/src/services/emailTemplates.js`
+- Create: `server/src/utils/money.js`
 - Create: `server/tests/emailService.test.js`
 - Modify: `server/package.json` (add `nodemailer`)
 - Modify: `server/.env.example`
@@ -535,7 +537,7 @@ MAIL_FROM=
 - [ ] **Step 8: Commit**
 
 ```bash
-git add server/package.json server/package-lock.json server/src/services server/tests/emailService.test.js server/.env.example
+git add server/package.json server/package-lock.json server/src/services server/src/utils/money.js server/tests/emailService.test.js server/.env.example
 git commit -m "feat: add SMTP email service seam and invoice email template"
 ```
 
@@ -877,7 +879,7 @@ describe('Invoice delivery API', () => {
             isGst: true,
             buyerName: 'Ramesh',
             buyerGstin: '27XYZAB5678C1Z9',
-            paymentMethod: 'credit',
+            paymentMethod: 'cash',
         });
         const created = await request(app)
             .post(`/api/v1/invoices/${sale.id}/share`)
@@ -1043,7 +1045,7 @@ exports.getPublicInvoice = async (req, res) => {
     if (!token) return res.status(404).json(notFound);
 
     const sale = await Sale.findOne({ shareToken: token }).select(
-        `${PUBLIC_INVOICE_FIELDS} businessId shareTokenExpiresAt`
+        `${PUBLIC_INVOICE_FIELDS} businessId shareTokenExpiresAt shareToken`
     );
     if (!sale || !sale.shareToken || isTokenExpired(sale)) {
         return res.status(404).json(notFound);
@@ -1190,7 +1192,7 @@ router.use('/config', require('./configRoutes'));
 - [ ] **Step 6: Run test to verify it passes**
 
 Run: `cd server && npx jest tests/invoiceDelivery.test.js --runInBand`
-Expected: PASS — 15 tests.
+Expected: PASS — 16 tests.
 
 If `routes/index.js` ordering causes the public route to be shadowed, confirm `/public` is registered before `notFound` in [`app.js`](server/src/app.js:28) — it is, because all `router.use` lines sit inside the single `/api/v1` mount.
 
@@ -1610,6 +1612,9 @@ describe('downloadBlob', () => {
         const click = vi.fn();
         const anchor = { href: '', download: '', click, remove: vi.fn() };
         const createElement = vi.spyOn(document, 'createElement').mockReturnValue(anchor);
+        // The mocked anchor is a plain object, not a DOM Node, so short-circuit
+        // the real Node.appendChild to keep it out of jsdom.
+        const appendChild = vi.spyOn(document.body, 'appendChild').mockReturnValue(undefined);
 
         downloadBlob(new Blob(['x']), 'INV-1.pdf');
 
@@ -1618,7 +1623,9 @@ describe('downloadBlob', () => {
         expect(click).toHaveBeenCalledTimes(1);
         expect(anchor.remove).toHaveBeenCalledTimes(1);
         expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:fake');
+        expect(appendChild).toHaveBeenCalledWith(anchor);
         createElement.mockRestore();
+        appendChild.mockRestore();
     });
 });
 

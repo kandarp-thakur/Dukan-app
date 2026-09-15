@@ -32,6 +32,13 @@ Read [`docs/brain.md`](docs/brain.md) first — it is the master project context
 | [`docs/ui-style-guide.md`](docs/ui-style-guide.md) | Glass design system: colors, tokens, component classes, recipes |
 | [`docs/superpowers/specs/`](docs/superpowers/specs/) | Design specs (product + UI redesign) and implementation plans |
 
+## Invoice delivery
+
+- Download any invoice as a PDF straight from the browser (no server round-trip).
+- Email an invoice with the PDF attached (SMTP optional; the button disables cleanly when unset).
+- Send a public link over WhatsApp; the recipient opens a read-only page at `/i/:token`.
+- Public links rotate on every share and expire after `SHARE_LINK_TTL_DAYS` (revocable via the API).
+
 Multi-tenancy: every business document carries `businessId`; the `authenticate` →
 `tenantScope` → `requireRole` middleware chain scopes all queries to the caller's
 business and gates owner-only operations.

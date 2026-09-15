@@ -112,6 +112,33 @@ Legend: 🔓 public · 🔒 authenticated (any role) · 👑 owner-only
 |---|---|---|---|
 | GET | `/plans` | 🔓 | available plans (Free / Pro) |
 
+## Invoice Delivery
+
+| Method | Path | Auth | Notes |
+|---|---|---|---|
+| POST | `/invoices/:id/email` | 🔒 | multipart: `pdf` (file, ≤ 5 MB, `application/pdf`), `to`, optional `subject`. 503 if SMTP unset, 502 on transport failure, 400 bad file or recipient, 413 oversize, 404 foreign invoice |
+| POST | `/invoices/:id/share` | 🔒 | Returns `{ shareToken, shareUrl, expiresAt }`. Rotates on every call |
+| DELETE | `/invoices/:id/share` | 🔒 | Clears the token and its expiry |
+| GET | `/public/invoices/:token` | 🌐 | Unauthenticated reduced projection. 404 for unknown, expired or revoked tokens |
+| GET | `/config/features` | 🔒 | `{ email: boolean }` |
+
+`🌐` = public (no session); `🔒` = authenticated (any role). The public token route lives outside the tenant
+middleware chain — the token itself is the authorization. The public payload is rebuilt field-by-field, so
+internal fields (`businessId`, `shareToken`, `shareTokenExpiresAt`, `paymentMethod`, `customerId`) never leak.
+
+### Invoice delivery settings (server env)
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `SMTP_HOST` | (empty) | SMTP server host. Empty disables email; `POST /invoices/:id/email` then answers 503 |
+| `SMTP_PORT` | `587` | SMTP port |
+| `SMTP_SECURE` | `false` | `true` for implicit TLS (port 465), `false` for STARTTLS |
+| `SMTP_USER` | (empty) | SMTP username |
+| `SMTP_PASS` | (empty) | SMTP password |
+| `MAIL_FROM` | (empty) | From address on outgoing invoice mail |
+| `SHARE_LINK_BASE_URL` | `http://localhost:5173` | Base for public links: `${SHARE_LINK_BASE_URL}/i/${token}` (trailing slash trimmed) |
+| `SHARE_LINK_TTL_DAYS` | `30` | Days until a public share link expires |
+
 ## Error Codes
 
 | Status | Meaning |
