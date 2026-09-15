@@ -208,10 +208,12 @@ export default function InvoiceDocument({ invoice, business, variant = 'screen' 
                         <span>Total</span>
                         <span>{formatINR(invoice.total)}</span>
                     </div>
-                    <div className="flex justify-between text-gray-600">
-                        <span>Payment</span>
-                        <span className="uppercase">{invoice.paymentMethod}</span>
-                    </div>
+                    {invoice.paymentMethod && (
+                        <div className="flex justify-between text-gray-600">
+                            <span>Payment</span>
+                            <span className="uppercase">{invoice.paymentMethod}</span>
+                        </div>
+                    )}
                 </div>
             </div>
             <p className="mt-6 text-xs italic text-gray-500">

@@ -32,6 +32,8 @@ const invoice = {
     placeOfSupply: 'MH',
     status: 'completed',
 };
+// The public projection deliberately omits paymentMethod (spec 6.2), so the
+// fixture must mirror the real public response and never carry the field.
 const business = { name: 'Local Test Shop', address: 'Main Road, Pune', gstin: '27ABCDE1234F1Z5' };
 
 const renderPage = (token = 'tok') =>
@@ -95,5 +97,14 @@ describe('PublicInvoice page', () => {
         await screen.findByText('INV-9');
 
         expect(screen.getByText(/cancelled/i)).toBeInTheDocument();
+    });
+
+    it('does not render a Payment row when the public payload omits paymentMethod', async () => {
+        expect(invoice).not.toHaveProperty('paymentMethod');
+        publicApi.getInvoice.mockResolvedValue({ invoice, business });
+        renderPage();
+        await screen.findByText('INV-9');
+
+        expect(screen.queryByText('Payment')).toBeNull();
     });
 });

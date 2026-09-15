@@ -100,6 +100,15 @@ describe('InvoiceDetail page', () => {
         expect(screen.getByRole('button', { name: /share/i })).toBeInTheDocument();
     });
 
+    it('keeps rendering the Payment row when paymentMethod is present', async () => {
+        invoicesApi.get.mockResolvedValue({ invoice: gstInvoice, business });
+        renderDetail();
+        await screen.findByText('INV-9');
+
+        expect(screen.getByText('Payment')).toBeInTheDocument();
+        expect(screen.getByText('cash')).toBeInTheDocument();
+    });
+
     it('renders a non-GST invoice without GST lines', async () => {
         invoicesApi.get.mockResolvedValue({ invoice: nonGstInvoice, business });
         renderDetail();
