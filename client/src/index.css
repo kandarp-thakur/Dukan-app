@@ -62,6 +62,12 @@
   .badge-neutral {
     @apply bg-white/60 text-gray-600;
   }
+  .navbar-solid {
+    @apply border-b border-white/60 bg-white/70 shadow-glass backdrop-blur-xl;
+  }
+  .navbar-transparent {
+    @apply bg-transparent;
+  }
   .skeleton {
     @apply animate-pulse rounded-xl bg-white/50;
   }
