@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { dashboardApi } from '../api/endpoints';
+import { useAuth } from '../context/AuthContext';
 import { formatINR } from '../utils/money';
 import {
     LayoutDashboard,
@@ -15,13 +16,14 @@ import {
 const CARDS = [
     { key: 'salesTotal', label: 'Sales', to: '/sales', color: 'text-green-600', icon: TrendingUp },
     { key: 'expensesTotal', label: 'Expenses', to: '/expenses', color: 'text-red-600', icon: TrendingDown },
-    { key: 'profit', label: 'Profit', to: '/reports', color: 'text-primary', icon: PiggyBank },
+    { key: 'profit', label: 'Profit', to: '/reports', color: 'text-primary', icon: PiggyBank, ownerOnlyLink: true },
     { key: 'cashBalance', label: 'Cash balance', to: '/dashboard', color: 'text-blue-600', icon: IndianRupee },
     { key: 'receivable', label: 'To collect (khata)', to: '/customers', color: 'text-orange-600', icon: BookOpen },
     { key: 'payable', label: 'To pay (suppliers)', to: '/suppliers', color: 'text-red-700', icon: Landmark },
 ];
 
 export default function Dashboard() {
+    const { user } = useAuth();
     const [range, setRange] = useState('today');
     const [summary, setSummary] = useState(null);
     const [error, setError] = useState('');
@@ -61,8 +63,8 @@ export default function Dashboard() {
                         type="button"
                         onClick={() => setRange('today')}
                         className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition ${range === 'today'
-                                ? 'bg-gradient-to-r from-primary to-accent text-white shadow-btn-glow'
-                                : 'text-primary hover:bg-white/50'
+                            ? 'bg-gradient-to-r from-primary to-accent text-white shadow-btn-glow'
+                            : 'text-primary hover:bg-white/50'
                             }`}
                     >
                         Today
@@ -71,8 +73,8 @@ export default function Dashboard() {
                         type="button"
                         onClick={() => setRange('month')}
                         className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition ${range === 'month'
-                                ? 'bg-gradient-to-r from-primary to-accent text-white shadow-btn-glow'
-                                : 'text-primary hover:bg-white/50'
+                            ? 'bg-gradient-to-r from-primary to-accent text-white shadow-btn-glow'
+                            : 'text-primary hover:bg-white/50'
                             }`}
                     >
                         This month
@@ -91,20 +93,32 @@ export default function Dashboard() {
 
             {summary && !loading && (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {CARDS.map(({ key, label, to, color, icon: Icon }) => (
-                        <Link key={key} to={to} className="glass-card block p-6">
-                            <div className="flex items-start justify-between gap-3">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</p>
-                                <span className="rounded-xl bg-white/60 p-2.5">
-                                    <Icon size={24} className={color} />
-                                </span>
+                    {CARDS.map(({ key, label, to, color, icon: Icon, ownerOnlyLink }) => {
+                        const isLinkable = !ownerOnlyLink || user?.role === 'owner';
+                        const card = (
+                            <>
+                                <div className="flex items-start justify-between gap-3">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</p>
+                                    <span className="rounded-xl bg-white/60 p-2.5">
+                                        <Icon size={24} className={color} />
+                                    </span>
+                                </div>
+                                <p className={`mt-2 text-3xl font-bold ${color}`}>{formatINR(summary[key])}</p>
+                                {key === 'profit' && (
+                                    <p className="mt-1 text-xs text-gray-400">Sales − expenses for the period</p>
+                                )}
+                            </>
+                        );
+                        return isLinkable ? (
+                            <Link key={key} to={to} className="glass-card block p-6">
+                                {card}
+                            </Link>
+                        ) : (
+                            <div key={key} className="glass-card block p-6">
+                                {card}
                             </div>
-                            <p className={`mt-2 text-3xl font-bold ${color}`}>{formatINR(summary[key])}</p>
-                            {key === 'profit' && (
-                                <p className="mt-1 text-xs text-gray-400">Sales − expenses for the period</p>
-                            )}
-                        </Link>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
 

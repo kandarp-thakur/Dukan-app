@@ -4,6 +4,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Dashboard from './Dashboard';
 import { dashboardApi } from '../api/endpoints';
 
+const mockAuth = { user: { role: 'owner' } };
+
+vi.mock('../context/AuthContext', () => ({
+    useAuth: () => mockAuth,
+}));
+
 vi.mock('../api/endpoints', () => ({
     dashboardApi: {
         summary: vi.fn(),
@@ -23,6 +29,7 @@ const summary = {
 describe('Dashboard page', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockAuth.user = { role: 'owner' };
         dashboardApi.summary.mockResolvedValue({ summary });
     });
 
@@ -61,5 +68,29 @@ describe('Dashboard page', () => {
             </MemoryRouter>
         );
         expect(await screen.findByText('Summary unavailable')).toBeInTheDocument();
+    });
+
+    it('links the owner-only profit card for an owner', async () => {
+        render(
+            <MemoryRouter>
+                <Dashboard />
+            </MemoryRouter>
+        );
+        await screen.findByText('₹1,400');
+        expect(screen.getByText('Profit').closest('a')).toHaveAttribute('href', '/reports');
+        expect(screen.getByText('Sales').closest('a')).toHaveAttribute('href', '/sales');
+    });
+
+    it('keeps the profit figure but drops its dead-end link for staff', async () => {
+        mockAuth.user = { role: 'staff' };
+        render(
+            <MemoryRouter>
+                <Dashboard />
+            </MemoryRouter>
+        );
+        await screen.findByText('₹1,400');
+        expect(screen.getByText('Profit').closest('a')).toBeNull();
+        expect(screen.getByText('₹1,150')).toBeInTheDocument();
+        expect(screen.getByText('Sales').closest('a')).toHaveAttribute('href', '/sales');
     });
 });
