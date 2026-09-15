@@ -165,3 +165,18 @@ Icons inherit text color (`className="text-primary"` etc.). Stat-card icons sit 
 - **Status pill:** `<span className="badge badge-success">completed</span>`
 - **Stat card:** `.glass-card` + icon square + uppercase label + `text-3xl` colored value
 - **Never:** emoji icons, motion beyond `animate-pulse`, non-glass opaque panels, raw ad-hoc shadows
+
+## 9. Public (marketing) surface
+
+The public pages — `/` (landing), `/login`, `/register` — share `PublicLayout`
+(`client/src/components/PublicLayout.jsx`): `PublicNavbar` + `<main>` + `PublicFooter`.
+
+- The navbar is transparent only on `/` (it floats over the hero) and becomes
+  solid after 16px of scroll; on auth pages it is always solid.
+- The hero's 3D scene is decorative: its wrapper is `aria-hidden="true"` and it
+  is mounted only when `shouldUse3D()` passes (WebGL present, >= 768px wide, no
+  reduced-motion preference). Otherwise `HeroFallback` renders instead.
+- Landing sections reuse the app's components verbatim: `.glass`, `.glass-card`,
+  `.btn-primary`, `.btn-ghost`, `.badge-*`.
+- Pricing mirrors the server plan catalog; `PricingSection` exports
+  `FALLBACK_PLANS` and reads `/plans` when available.
