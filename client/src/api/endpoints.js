@@ -47,6 +47,16 @@ export const salesApi = {
 export const invoicesApi = {
     list: (params) => unwrap(api.get('/invoices', { params })),
     get: (id) => unwrap(api.get(`/invoices/${id}`)),
+    sendEmail: (id, formData) => unwrap(api.post(`/invoices/${id}/email`, formData)),
+    share: (id) => unwrap(api.post(`/invoices/${id}/share`)),
+    revokeShare: (id) => unwrap(api.delete(`/invoices/${id}/share`)),
+};
+
+// Public invoice lookup. Goes through the shared axios instance on purpose: the
+// public endpoint answers 404 (never 401) so the auth-refresh interceptor never
+// fires, and no bearer token is needed even when a session exists.
+export const publicApi = {
+    getInvoice: (token) => unwrap(api.get(`/public/invoices/${token}`)),
 };
 
 // ---------- Expenses ----------
@@ -85,4 +95,9 @@ export const businessApi = {
 
 export const plansApi = {
     list: () => unwrap(api.get('/plans')),
+};
+
+// ---------- Feature flags ----------
+export const configApi = {
+    features: () => unwrap(api.get('/config/features')),
 };
