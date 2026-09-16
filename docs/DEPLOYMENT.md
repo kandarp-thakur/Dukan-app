@@ -132,18 +132,30 @@ curl https://acc-app-api.onrender.com/api/v1/health
 
 ## Step 3 — Vercel (frontend)
 
+> ⚠️ **Set Root Directory to `client`.** This is the single most common cause of a
+> platform-level `404 NOT_FOUND` on the site. If Vercel builds the **repo root**
+> instead of `client`, it never reads [`client/vercel.json`](../client/vercel.json),
+> so the SPA rewrite is never applied and every deep link (`/login`, `/invoices`, …)
+> — and often the whole site — 404s with Vercel's own error page.
+>
+> The repo also ships a **defensive root-level [`vercel.json`](../vercel.json)** that
+> builds `client/dist` with the same rewrite, so a root-directory deployment still
+> works. Even so, **Root Directory = `client`** is the recommended setting.
+
 1. Vercel dashboard → **Add New…** → **Project** → import the Git repo.
-2. **Root Directory:** `client`. Framework preset should detect **Vite**
-   (build `npm run build`, output `dist`). [`client/vercel.json`](../client/vercel.json)
-   supplies these plus the SPA rewrite.
+2. **Root Directory:** `client` (see warning above). Framework preset should detect
+   **Vite** (build `npm run build`, output `dist`).
+   [`client/vercel.json`](../client/vercel.json) supplies these plus the SPA rewrite.
 3. Add an **Environment Variable** (Production):
    - `VITE_API_URL` = `https://acc-app-api.onrender.com/api/v1`
      (include the `/api/v1` suffix).
 4. Deploy. Copy the production URL, e.g. `https://acc-app-shubham.vercel.app`.
 
-The rewrite in `client/vercel.json` sends all non-asset paths to `index.html` so
-client-side routes (`/invoices`, `/customers`, `/i/:token`, …) survive a refresh
-instead of 404ing.
+The rewrite `"/((?!assets/).*)" → "/index.html"` sends every non-asset path to
+`index.html` so client-side routes (`/invoices`, `/customers`, `/i/:token`, …)
+survive a hard refresh instead of 404ing. Vercel still serves real static files
+(`/vite.svg`, `/assets/*`) directly, because a rewrite only applies when no file
+exists at the requested path.
 
 ---
 
@@ -209,7 +221,8 @@ After domains are live, update `CLIENT_URL`, `SHARE_LINK_BASE_URL` (Render), and
 | 401 loops / cookies not set | Cookie sent over HTTPS but `CLIENT_URL` mismatch, or `withCredentials` broken by wrong base URL | Confirm `VITE_API_URL` includes `/api/v1` and `CLIENT_URL` is exact |
 | Backend build crashes: "MONGO_URI is not set" | Env var missing on Render | Add `MONGO_URI` in the Render dashboard and redeploy |
 | Mongo connection timeout | Atlas IP allowlist blocks Render | Add `0.0.0.0/0` in Atlas *Network Access* |
-| Deep link 404 on refresh | SPA rewrite missing | Confirm [`client/vercel.json`](../client/vercel.json) is present and deployed |
+| `404 NOT_FOUND` on **every** URL, incl. the site root | Vercel project **Root Directory** is not `client`, so [`client/vercel.json`](../client/vercel.json) (and its SPA rewrite) is never applied | Project → Settings → General → **Root Directory** = `client`, then **Redeploy**. (A root [`vercel.json`](../vercel.json) is also provided as a fallback for root-directory builds.) |
+| Deep link 404 on refresh (site root still works) | SPA rewrite missing or not deployed | Confirm [`client/vercel.json`](../client/vercel.json) (or root [`vercel.json`](../vercel.json)) is present, committed, and part of the deployed commit |
 | First request slow (~40s) | Render free tier cold start | Expected; upgrade instance or keep it warm |
 | Email button disabled | SMTP not configured | Set the `SMTP_*` + `MAIL_FROM` vars (step 5) |
 | Could not send email (502) | Bad SMTP creds / blocked port | Re-check SMTP user/password; many hosts block 587 outbound on free tiers — try an API-based provider |
