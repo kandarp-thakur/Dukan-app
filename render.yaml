@@ -5,8 +5,27 @@
 # Render will read this file. Values marked `sync: false` are NOT stored in
 # git -- Render prompts you for them (or you set them in the dashboard).
 #
-# The frontend is hosted separately on Vercel and the database on MongoDB
-# Atlas; neither is declared here. See docs/DEPLOYMENT.md for the full runbook.
+# !! IMPORTANT -- READ THIS BEFORE CREATING THE SERVICE !!
+# This file is only honored by a BLUEPRINT-managed service. If you instead
+# create a plain "Web Service", Render ignores every setting below: no
+# NODE_VERSION, no rootDir, and above all NO PROMPT for the `sync: false`
+# values, which leaves MONGO_URI unset and the service exits 1 on boot with
+# "Failed to start server: MONGO_URI is not set".
+# Tell-tale sign you are on a manual service: a `sync: false` var was never
+# asked for, and the build log says "Using Node.js version <X> (default)"
+# instead of the pinned 20.
+#
+# MINIMUM VIABLE ENV SET -- all three are REQUIRED or the process exits 1:
+#   MONGO_URI           Atlas connection string      (sync: false -> set it)
+#   JWT_ACCESS_SECRET   long random string           (sync: false -> set it)
+#   JWT_REFRESH_SECRET  a DIFFERENT random string    (sync: false -> set it)
+# Strongly recommended, or the deployed frontend is rejected by CORS:
+#   CLIENT_URL          exact Vercel origin, no trailing slash
+# Everything else below has a safe default or disables itself when unset.
+#
+# The frontend is hosted separately on Vercel. The database is MongoDB Atlas;
+# it is not declared here, so create the cluster first and paste MONGO_URI
+# into the dashboard. See docs/DEPLOYMENT.md for the full runbook.
 
 services:
   - type: web
@@ -22,7 +41,9 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "20"
-      # Secrets / environment-specific values -- set these in the Render dashboard.
+      # Secrets / environment-specific values -- set these in the Render
+      # dashboard. The first three are REQUIRED: if any is missing the server
+      # refuses to start and the deploy fails (see server/src/config/env.js).
       - key: MONGO_URI
         sync: false
       - key: JWT_ACCESS_SECRET

@@ -89,6 +89,23 @@ Confirm `.env` files are **not** tracked (`git status` should not list any real
 
 ## Step 2 — Render (backend)
 
+> ⚠️ **Root Directory must be `server`.** This is the single most common cause of
+> the backend crashing on boot with:
+> ```
+> Error: Cannot find module '/opt/render/project/src/src/server.js'
+> ```
+> Render clones the repo to `/opt/render/project/src`. If **Root Directory** is
+> left blank (or set to the repo root), the start command `node src/server.js`
+> resolves against the repo root and appends another `src/` — looking for
+> `…/src/src/server.js`, which does not exist. The API entry point is
+> [`server/src/server.js`](../server/src/server.js:1).
+>
+> Two tell-tale signs that the service is running on dashboard defaults and is
+> **not** reading [`render.yaml`](../render.yaml) (i.e. it was created as a manual
+> **Web Service** rather than via **Blueprint**): the crash log prints a Node
+> version other than the pinned `20` (e.g. `Node.js v24.x`), and the **Root
+> Directory** field is empty.
+
 1. Render dashboard → **New +** → **Blueprint** (or **Web Service**).
 2. Connect the Git repo. If you use **Blueprint**, Render reads
    [`render.yaml`](../render.yaml) and pre-fills root dir, build/start commands,
@@ -104,13 +121,32 @@ Confirm `.env` files are **not** tracked (`git status` should not list any real
 
 ### Backend environment variables
 
+**Required — the server exits `1` without them.** This is enforced at boot by
+[`server/src/config/env.js`](../server/src/config/env.js:1), which reports *every*
+missing variable in one message, so a single redeploy tells you everything you are
+missing instead of surfacing one variable per attempt.
+
 | Key | Value | Notes |
 |---|---|---|
 | `MONGO_URI` | `mongodb+srv://.../acc-app?...` | From step 1 |
 | `JWT_ACCESS_SECRET` | 96-char hex | Generated above |
 | `JWT_REFRESH_SECRET` | different 96-char hex | Generated above |
+
+**Strongly recommended.** Without `CLIENT_URL` the API still boots and its health
+check passes, but every request from the deployed frontend is rejected by CORS,
+because [`server/src/app.js`](../server/src/app.js:15) silently falls back to
+`http://localhost:5173`. A green health check with broken logins usually means
+this variable is missing.
+
+| Key | Value | Notes |
+|---|---|---|
 | `CLIENT_URL` | `https://<your-app>.vercel.app` | **Exact** Vercel URL — CORS origin. Set after step 3, then redeploy |
 | `SHARE_LINK_BASE_URL` | same as `CLIENT_URL` | Base for public invoice links (`/i/:token`) |
+
+**Optional — each has a working default or disables itself cleanly when unset:**
+
+| Key | Value | Notes |
+|---|---|---|
 | `SHARE_LINK_TTL_DAYS` | `30` | Link expiry |
 | `SMTP_HOST` | e.g. `smtp.gmail.com` | Optional — email only |
 | `SMTP_PORT` | `587` | Optional |
@@ -121,6 +157,17 @@ Confirm `.env` files are **not** tracked (`git status` should not list any real
 
 > **Do not set `PORT`.** Render injects it and [`server/src/server.js`](../server/src/server.js:5)
 > reads `process.env.PORT`.
+>
+> **Node version:** two mechanisms pin Node to 20. [`render.yaml`](../render.yaml:23)
+> sets `NODE_VERSION=20`, but that applies **only to Blueprint-managed services**.
+> Independently, a committed [`.node-version`](../server/.node-version) (present at
+> both the repo root and `server/`) is honored by Render's Node runtime for **any**
+> service type when it sits in the service root directory. A manual **Web Service**
+> with **Root Directory** = `server` therefore also boots on Node 20. If the build
+> log still shows `Using Node.js version <X> (default)` with an `<X>` other than
+> `20`, the committed file is not being read — check that **Root Directory** is
+> `server` (or the repo root), or set `NODE_VERSION` = `20` explicitly under the
+> service's **Environment** tab.
 
 **Verify the backend:**
 ```sh
@@ -150,6 +197,11 @@ curl https://acc-app-api.onrender.com/api/v1/health
    - `VITE_API_URL` = `https://acc-app-api.onrender.com/api/v1`
      (include the `/api/v1` suffix).
 4. Deploy. Copy the production URL, e.g. `https://acc-app-shubham.vercel.app`.
+
+> **The build now fails fast if `VITE_API_URL` is missing.** [`client/vite.config.js`](../client/vite.config.js:1)
+> aborts a `production` build when `VITE_API_URL` is unset, so a deployment can
+> never silently ship a bundle that talks to the static host. If you run
+> `npm run build --prefix client` locally you must export `VITE_API_URL` first.
 
 The rewrite `"/((?!assets/).*)" → "/index.html"` sends every non-asset path to
 `index.html` so client-side routes (`/invoices`, `/customers`, `/i/:token`, …)
@@ -255,11 +307,15 @@ Notes:
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
+| Login says **"Login failed (HTTP 405)..."** (or *"the request reached a static host, not the API"*) | `VITE_API_URL` was unset at build time, so the bundle fell back to the relative `/api/v1` and the login `POST` hit the **static Vercel host** instead of Render. Static hosts answer non-GET verbs with **405 Method Not Allowed** and a non-JSON body — note this app's Express `notFound` returns **404 JSON**, so a 405 proves the API was never reached. | Set `VITE_API_URL` = `https://<api>.onrender.com/api/v1` as a Vercel **Production** env var, then **Redeploy** (Vite inlines env vars at build time — editing the variable without redeploying changes nothing). The production build now fails fast if the var is missing ([`client/vite.config.js`](../client/vite.config.js:1)). Confirm in DevTools → Network that the `login` request URL is the Render host, not `*.vercel.app`. |
 | Login says **"Can't reach the API at ..."** | `VITE_API_URL` was unset at build time, so the bundle fell back to `/api/v1` on the Vercel origin. The SPA rewrite in [`client/vercel.json`](../client/vercel.json) then returns `index.html` for that path, so axios gets HTML instead of JSON and throws before credentials are checked. | Set `VITE_API_URL` = `https://<api>.onrender.com/api/v1` as a Vercel **Production** env var, then **Redeploy** (Vite inlines env vars at build time — editing the variable without redeploying changes nothing). Confirm in DevTools → Network that the `login` request URL is the Render host, not `*.vercel.app`. |
 | Login says **"Invalid email or password"** | Correct credentials never seeded, or seeded against a different database | Run `npm run seed` with `MONGO_URI` pointed at the **same** database the Render API uses (see *Demo / client-review account*). |
 | Browser console: CORS / "blocked by CORS policy" | `CLIENT_URL` ≠ exact Vercel origin. If `CLIENT_URL` is **unset**, [`server/src/app.js`](../server/src/app.js:15) falls back to `http://localhost:5173`, so every deployed request is rejected | Set `CLIENT_URL` to the exact Vercel URL (no trailing slash) and redeploy Render |
 | 401 loops / cookies not set | Cookie sent over HTTPS but `CLIENT_URL` mismatch, or `withCredentials` broken by wrong base URL | Confirm `VITE_API_URL` includes `/api/v1` and `CLIENT_URL` is exact |
-| Backend build crashes: "MONGO_URI is not set" | Env var missing on Render | Add `MONGO_URI` in the Render dashboard and redeploy |
+| Backend crashes at boot: `Cannot find module '/opt/render/project/src/src/server.js'` (note the **doubled `src`**) | Render **Root Directory** is not set to `server`, so the start command `node src/server.js` runs from the repo root and resolves `…/src/src/server.js` | Service → Settings → **Root Directory** = `server`, then **Redeploy**. (Recreate the service via **Blueprint** to pick up [`render.yaml`](../render.yaml) automatically.) If the crash log shows a Node version other than the pinned `20`, the manual service is ignoring the Blueprint — recreate it. |
+| Build log says `Using Node.js version <X> (default)` with `<X>` not `20` | Neither [`render.yaml`](../render.yaml:23) nor the committed [`.node-version`](../server/.node-version) was read — usually because the service's **Root Directory** is neither `server` nor the repo root | Set **Root Directory** = `server`, or add env var `NODE_VERSION` = `20` under **Environment**. Non-fatal, but loses the tested-runtime guarantee. |
+| Boot log: `Failed to start server: MONGO_URI is not set` then `Exited with status 1` | The `MONGO_URI` env var is not present in the running service. Because [`server/src/config/db.js`](../server/src/config/db.js:4) throws before `app.listen`, the process exits `1` and Render marks the deploy failed — **this is a deploy-time failure, not a runtime one**. Most often the service is a manual **Web Service** rather than a **Blueprint** service, so the `sync: false` prompt in [`render.yaml`](../render.yaml:26) was never shown; alternatively the value was added but the service was not redeployed. | Render dashboard → the service → **Environment** → add `MONGO_URI` (the Atlas string from step 1) → **Save** → **Redeploy** (env changes only take effect on a new deploy). If the value was never prompted for, recreate the service via **New + → Blueprint** so Render reads [`render.yaml`](../render.yaml:1) and prompts for every `sync: false` key. `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET` are `sync: false` too — set them now, or the API boots but login fails later. |
+| Log line `◇ injected env (0) from .env` (or `enable debugging { debug: true }`) | **Not an error.** [`server/src/server.js`](../server/src/server.js:1) calls `require('dotenv').config()`, and there is no `.env` in the deployed bundle — correct, since [`.gitignore`](../.gitignore:8) excludes it and secrets live in the Render dashboard | Ignore it. Read the *next* line for the real status (`MongoDB connected` on success). The `(0)` count refers only to file-loaded vars; dashboard vars never appear in it. |
 | Mongo connection timeout | Atlas IP allowlist blocks Render | Add `0.0.0.0/0` in Atlas *Network Access* |
 | `404 NOT_FOUND` on **every** URL, incl. the site root | Vercel project **Root Directory** is not `client`, so [`client/vercel.json`](../client/vercel.json) (and its SPA rewrite) is never applied | Project → Settings → General → **Root Directory** = `client`, then **Redeploy**. (A root [`vercel.json`](../vercel.json) is also provided as a fallback for root-directory builds.) |
 | Deep link 404 on refresh (site root still works) | SPA rewrite missing or not deployed | Confirm [`client/vercel.json`](../client/vercel.json) (or root [`vercel.json`](../vercel.json)) is present, committed, and part of the deployed commit |
