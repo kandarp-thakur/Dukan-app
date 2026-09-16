@@ -1,6 +1,11 @@
 node_modules/
 dist/
-.env
 uploads/
 .superpowers/
 .mongodb/
+
+# Environment secrets -- ignore every variant, but keep the tracked templates.
+.env
+.env.*
+!.env.example
+!.env.production.example

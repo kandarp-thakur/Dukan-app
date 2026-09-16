@@ -1,0 +1,51 @@
+# Render Blueprint for the Acc App backend (Express API).
+# Docs: https://render.com/docs/blueprint-spec
+#
+# Usage: In Render, choose "New +" -> "Blueprint", connect this repo, and
+# Render will read this file. Values marked `sync: false` are NOT stored in
+# git -- Render prompts you for them (or you set them in the dashboard).
+#
+# The frontend is hosted separately on Vercel and the database on MongoDB
+# Atlas; neither is declared here. See docs/DEPLOYMENT.md for the full runbook.
+
+services:
+  - type: web
+    name: acc-app-api
+    runtime: node
+    plan: free
+    region: singapore # pick the region closest to you; must be reachable by your Vercel users
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node src/server.js
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      # Secrets / environment-specific values -- set these in the Render dashboard.
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      # Render injects PORT automatically; the app reads process.env.PORT.
+      - key: CLIENT_URL
+        sync: false
+      - key: SHARE_LINK_BASE_URL
+        sync: false
+      - key: SHARE_LINK_TTL_DAYS
+        value: "30"
+      # SMTP is optional -- only needed for emailing invoices.
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_SECURE
+        value: "false"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MAIL_FROM
+        sync: false
