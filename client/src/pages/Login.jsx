@@ -34,12 +34,34 @@ export default function Login() {
       } else if (err.response) {
         setError(`Login failed (HTTP ${err.response.status}). Please try again.`);
       } else {
-        // No response at all: the POST never reached an API. Usual causes are an
-        // unset VITE_API_URL (so the request hits the hosting origin and the SPA
-        // rewrite returns HTML) or a stopped/cold backend. Name the target so the
-        // operator can see what it was actually talking to.
+        // No response at all: the browser never received a reply. Keep in mind
+        // the base URL printed below is the value inlined into this bundle, so
+        // if it is a real https:// URL then VITE_API_URL is already correct and
+        // is NOT the problem. The remaining causes, in order of likelihood:
+        //   1. CORS. A JSON POST is not a "simple" request, so the browser sends
+        //      an OPTIONS preflight first. If Render's CLIENT_URL does not
+        //      byte-match this site's origin the preflight is rejected and the
+        //      POST is never even sent -- which looks exactly like a dead API.
+        //      See server/src/app.js and docs/DEPLOYMENT.md.
+        //   2. A sleeping backend. Render's free tier idles out and needs ~30-50s
+        //      to wake, which a default request timeout may not survive.
+        //   3. A genuinely down service.
         const base = import.meta.env.VITE_API_URL || '/api/v1 (same origin)';
-        setError(`Can't reach the API at ${base}. Check the backend is running and that VITE_API_URL is set correctly.`);
+        if (base.startsWith('http')) {
+          setError(
+            `Can't reach the API at ${base} — the request got no reply. Most often the ` +
+            'backend is asleep: Render\'s free tier takes 30-50s to wake, so wait a moment ' +
+            "and try again. If it stays unreachable, CORS is blocking this site — on Render " +
+            "set CLIENT_URL to this site's exact URL (no trailing slash) and redeploy. " +
+            'See docs/DEPLOYMENT.md.'
+          );
+        } else {
+          setError(
+            `Can't reach the API at ${base}. VITE_API_URL was not set for this build, so the ` +
+            'request went to the frontend host instead of the API. Set it to your API base ' +
+            '(e.g. https://<api>.onrender.com/api/v1) and redeploy. See docs/DEPLOYMENT.md.'
+          );
+        }
       }
     } finally {
       setSubmitting(false);

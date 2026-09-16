@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import Login from './Login';
 import Register from './Register';
 
@@ -13,6 +13,7 @@ vi.mock('../context/AuthContext', () => ({
 
 describe('Login', () => {
   beforeEach(() => vi.clearAllMocks());
+  afterEach(() => vi.unstubAllEnvs());
 
   it('renders labeled fields and submits credentials', async () => {
     render(
@@ -53,6 +54,26 @@ describe('Login', () => {
     fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'Demo@12345' } });
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
     expect(await screen.findByText(/can't reach the api/i)).toBeInTheDocument();
+  });
+
+  // The base URL in the message is the value inlined into this bundle. When it
+  // is already a real https:// URL, VITE_API_URL is correct and telling the
+  // operator to "set VITE_API_URL" sends them down the wrong path. The live
+  // cause is then a CORS preflight rejection (Render CLIENT_URL) or a
+  // cold-started backend, so the message must name those instead.
+  it('points at CORS / cold start when VITE_API_URL is already a real URL', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://acc-app-api.onrender.com/api/v1');
+    mockLogin.mockRejectedValueOnce(new Error('Network Error'));
+    render(
+      <MemoryRouter>
+        <Login />
+      </MemoryRouter>
+    );
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'demo@dukan.app' } });
+    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'Demo@12345' } });
+    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    expect(await screen.findByText(/got no reply/i)).toBeInTheDocument();
+    expect(screen.getByText(/CLIENT_URL/)).toBeInTheDocument();
   });
 
   // An HTTP 405 with no API message means a static host answered the POST

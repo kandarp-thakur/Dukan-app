@@ -260,13 +260,54 @@ exists at the requested path.
 
 ## Step 4 — Wire CORS (close the loop)
 
-The API allows only one origin — `CLIENT_URL` ([`server/src/app.js`](../server/src/app.js:15)).
-Auth uses `credentials: true` cookies, so this must match exactly.
+The API allows only the origins listed in `CLIENT_URL`
+([`server/src/app.js`](../server/src/app.js:15)). Auth uses `credentials: true`
+cookies, so the value must be an exact origin — never `*`, which browsers reject
+for credentialed requests.
 
 1. In Render, set `CLIENT_URL` and `SHARE_LINK_BASE_URL` to the Vercel URL
    from step 3 (e.g. `https://acc-app-shubham.vercel.app`, no trailing slash).
 2. Redeploy the Render service (env changes take effect on the next deploy).
 3. If a later deploy changes the Vercel URL, update these and redeploy.
+
+**Why this is load-bearing.** `POST /api/v1/auth/login` sends JSON, which is not
+a CORS *simple request*, so the browser first sends an `OPTIONS` preflight. If
+that preflight fails, the browser never sends the `POST` — so the app sees **no
+response at all** and shows *"Can't reach the API at …"*. A healthy `/health`
+endpoint does **not** prove CORS is correct: `/health` is a `GET` and may never
+be preflighted. CORS is read once at process start, so `CLIENT_URL` changes
+require a redeploy.
+
+Accepted forms (all normalised by `parseAllowedOrigins()` in
+[`server/src/app.js`](../server/src/app.js:14)):
+
+| `CLIENT_URL` value | Result |
+|---|---|
+| `https://acc-app-shubham.vercel.app` | allowed |
+| `https://acc-app-shubham.vercel.app/` | allowed — trailing slash stripped |
+| `https://app.vercel.app,https://staging.vercel.app` | both allowed (comma-separated) |
+| *unset* | falls back to `http://localhost:5173` and logs a `[cors]` warning; **deployed calls are blocked** |
+
+The API warns in the deploy log whenever it blocks an origin, naming the value to
+set:
+
+```
+[cors] Blocked origin https://acc-app-shubham.vercel.app. Allowed: http://localhost:5173. ...
+```
+
+**Verify it, don't assume it.** The health check cannot catch a CORS
+misconfiguration; assert the preflight directly:
+
+```sh
+npm run verify:deploy -- \
+  --api-url=https://acc-app-api.onrender.com \
+  --client-url=https://acc-app-shubham.vercel.app
+```
+
+The `CORS allows <origin>` check must pass, and should report `credentials
+allowed`. If it reports *"no Access-Control-Allow-Origin header"*, `CLIENT_URL`
+is unset or does not match; if it reports *"origin echoed as … instead"*, the
+value has a typo or a second origin.
 
 ---
 
@@ -355,9 +396,10 @@ Notes:
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | Login says **"Login failed (HTTP 405)..."** (or *"the request reached a static host, not the API"*) | `VITE_API_URL` was unset at build time, so the bundle fell back to the relative `/api/v1` and the login `POST` hit the **static Vercel host** instead of Render. Static hosts answer non-GET verbs with **405 Method Not Allowed** and a non-JSON body — note this app's Express `notFound` returns **404 JSON**, so a 405 proves the API was never reached. | Set `VITE_API_URL` = `https://<api>.onrender.com/api/v1` as a Vercel **Production** env var, then **Redeploy** (Vite inlines env vars at build time — editing the variable without redeploying changes nothing). The production build now fails fast if the var is missing ([`client/vite.config.js`](../client/vite.config.js:1)). Confirm in DevTools → Network that the `login` request URL is the Render host, not `*.vercel.app`. |
-| Login says **"Can't reach the API at ..."** | `VITE_API_URL` was unset at build time, so the bundle fell back to `/api/v1` on the Vercel origin. The SPA rewrite in [`client/vercel.json`](../client/vercel.json) then returns `index.html` for that path, so axios gets HTML instead of JSON and throws before credentials are checked. | Set `VITE_API_URL` = `https://<api>.onrender.com/api/v1` as a Vercel **Production** env var, then **Redeploy** (Vite inlines env vars at build time — editing the variable without redeploying changes nothing). Confirm in DevTools → Network that the `login` request URL is the Render host, not `*.vercel.app`. |
+| Login says **"Can't reach the API at …"** and the URL printed is a relative path (`/api/v1 (same origin)`) | `VITE_API_URL` was unset at build time, so the bundle fell back to `/api/v1` on the Vercel origin. The SPA rewrite in [`client/vercel.json`](../client/vercel.json) returns `index.html` for that path, so axios gets HTML instead of JSON and throws before credentials are checked. | Set `VITE_API_URL` = `https://<api>.onrender.com/api/v1` as a Vercel **Production** env var, then **Redeploy** (Vite inlines env vars at build time — editing the variable without redeploying changes nothing). The committed [`client/.env.production`](../client/.env.production) should already cover this. |
+| Login says **"Can't reach the API at https://… — the request got no reply"** (the URL is a real `https://` one) | **`VITE_API_URL` is already correct**, so it is *not* the cause — a wrong value would still have produced a response. The request produced **no HTTP response at all**, which means the browser never sent it (or never got an answer). In order of likelihood: **(1)** CORS — a JSON `POST` is not a *simple request*, so the browser sends an `OPTIONS` preflight first and, if `CLIENT_URL` does not byte-match the site origin, the `POST` is never sent; **(2)** Render's free tier was asleep (30–50s cold start) and the request timed out; **(3)** the service is genuinely down. | Check the Render log for `[cors] Blocked origin …` — that names the exact value to set. Then set `CLIENT_URL` = the site's exact origin (no trailing slash) and **Redeploy** Render; confirm with `npm run verify:deploy -- --api-url=https://<api>.onrender.com --client-url=https://<app>.vercel.app`. If instead `/api/v1/health` also fails, the service is down or waking — wait ~1 min and retry. |
 | Login says **"Invalid email or password"** | Correct credentials never seeded, or seeded against a different database | Run `npm run seed` with `MONGO_URI` pointed at the **same** database the Render API uses (see *Demo / client-review account*). |
-| Browser console: CORS / "blocked by CORS policy" | `CLIENT_URL` ≠ exact Vercel origin. If `CLIENT_URL` is **unset**, [`server/src/app.js`](../server/src/app.js:15) falls back to `http://localhost:5173`, so every deployed request is rejected | Set `CLIENT_URL` to the exact Vercel URL (no trailing slash) and redeploy Render |
+| Browser console: CORS / "blocked by CORS policy" | `CLIENT_URL` ≠ exact Vercel origin. If `CLIENT_URL` is **unset**, [`server/src/app.js`](../server/src/app.js:15) falls back to `http://localhost:5173`, so every deployed request is rejected. Because the failed request is the preflight `OPTIONS`, the app reports it as *"Can't reach the API"* — it never sees a status code to report | Set `CLIENT_URL` to the exact Vercel URL (no trailing slash) and redeploy Render. The API logs `[cors] Blocked origin …` with the value to use. Assert it with `npm run verify:deploy -- --api-url=https://<api>.onrender.com --client-url=https://<app>.vercel.app` |
 | 401 loops / cookies not set | Cookie sent over HTTPS but `CLIENT_URL` mismatch, or `withCredentials` broken by wrong base URL | Confirm `VITE_API_URL` includes `/api/v1` and `CLIENT_URL` is exact |
 | Backend crashes at boot: `Cannot find module '/opt/render/project/src/src/server.js'` (note the **doubled `src`**) | Render **Root Directory** is not set to `server`, so the start command `node src/server.js` runs from the repo root and resolves `…/src/src/server.js` | Service → Settings → **Root Directory** = `server`, then **Redeploy**. (Recreate the service via **Blueprint** to pick up [`render.yaml`](../render.yaml) automatically.) If the crash log shows a Node version other than the pinned `20`, the manual service is ignoring the Blueprint — recreate it. |
 | Build log says `Using Node.js version <X> (default)` with `<X>` not `20` | Neither [`render.yaml`](../render.yaml:23) nor the committed [`.node-version`](../server/.node-version) was read — usually because the service's **Root Directory** is neither `server` nor the repo root | Set **Root Directory** = `server`, or add env var `NODE_VERSION` = `20` under **Environment**. Non-fatal, but loses the tested-runtime guarantee. |
