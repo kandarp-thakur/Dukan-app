@@ -1,7 +1,7 @@
 # UI Style Guide — Glass Design System
 
 **App:** Acc App (business accounting SaaS)
-**Theme:** Rich light glassmorphism, green/mint brand
+**Theme:** Rich light glassmorphism, orange/peach brand
 **Source of truth:** `client/tailwind.config.js` (tokens) + `client/src/index.css` (`@layer components` classes)
 **Spec:** `docs/superpowers/specs/2026-09-11-glassmorphism-redesign-design.md`
 
@@ -13,19 +13,19 @@ This guide documents the visual language so any page (current or future) can be 
 
 | Token | Hex | Usage |
 |---|---|---|
-| `primary` | `#2E7D32` | Deep green — headings, links, active states, gradient start |
-| `accent` | `#4CAF50` | Fresh green — gradient end, focus rings, hover states |
-| `mint` | `#E8F5E9` | Background base start |
-| `sage` | `#F1F8F2` | Background base end |
+| `primary` | `#C2410C` | Deep burnt orange — headings, links, active states, gradient start |
+| `accent` | `#F97316` | Vibrant orange — gradient end, focus rings, hover states |
+| `peach` | `#FFEDD5` | Background base start |
+| `cream` | `#FFF7ED` | Background base end |
 
 ### Background blobs (ambient accents)
 
 | Color | Approx. value | Position |
 |---|---|---|
-| Soft green | `rgba(76, 175, 80, 0.20)` | top-left |
-| Sky blue | `rgba(64, 140, 255, 0.14)` | right, center |
-| Lilac | `rgba(167, 139, 250, 0.14)` | bottom-left |
-| Pale teal | `rgba(77, 208, 190, 0.12)` | bottom-right |
+| Bright orange | `rgba(249, 115, 22, 0.20)` | top-left |
+| Amber | `rgba(245, 158, 11, 0.14)` | right, center |
+| Rose | `rgba(244, 114, 182, 0.12)` | bottom-left |
+| Golden | `rgba(251, 191, 36, 0.12)` | bottom-right |
 
 ### Semantic (status colors)
 
@@ -45,11 +45,11 @@ One `background-image` stack on `body` (plus `background-attachment: fixed`), de
 ```css
 body {
   background-image:
-    radial-gradient(...), /* blob 1: soft green, top-left */
-    radial-gradient(...), /* blob 2: sky blue, right */
-    radial-gradient(...), /* blob 3: lilac, bottom-left */
-    radial-gradient(...), /* blob 4: pale teal, bottom-right */
-    linear-gradient(135deg, #E8F5E9 0%, #F1F8F2 100%); /* base */
+    radial-gradient(...), /* blob 1: bright orange, top-left */
+    radial-gradient(...), /* blob 2: amber, right */
+    radial-gradient(...), /* blob 3: rose, bottom-left */
+    radial-gradient(...), /* blob 4: golden, bottom-right */
+    linear-gradient(135deg, #FFEDD5 0%, #FFF7ED 100%); /* base */
 }
 ```
 
@@ -61,7 +61,7 @@ Glass panels float over this. Never add blob DOM elements — the background is 
 |---|---|---|
 | `shadow-glass` | `0 8px 32px 0 rgba(31, 38, 135, 0.10), inset 0 1px 0 0 rgba(255, 255, 255, 0.65)` | Resting panels (`.glass`) — ambient + inner top highlight combined in ONE value (Tailwind shadow utilities cannot stack) |
 | `shadow-glass-lg` | `0 12px 40px 0 rgba(31, 38, 135, 0.12), inset 0 1px 0 0 rgba(255, 255, 255, 0.65)` | Elevated/hover panels (`.glass-card:hover`) |
-| `shadow-btn-glow` | `0 4px 16px 0 rgba(46, 125, 50, 0.30)` | Under `.btn-primary` and active nav pill |
+| `shadow-btn-glow` | `0 4px 16px 0 rgba(194, 65, 12, 0.30)` | Under `.btn-primary` and active nav pill |
 
 ## 4. Component Classes
 
