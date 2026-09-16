@@ -40,20 +40,25 @@ export default function Login() {
         // is NOT the problem. The remaining causes, in order of likelihood:
         //   1. CORS. A JSON POST is not a "simple" request, so the browser sends
         //      an OPTIONS preflight first. If Render's CLIENT_URL does not
-        //      byte-match this site's origin the preflight is rejected and the
-        //      POST is never even sent -- which looks exactly like a dead API.
-        //      See server/src/app.js and docs/DEPLOYMENT.md.
-        //   2. A sleeping backend. Render's free tier idles out and needs ~30-50s
-        //      to wake, which a default request timeout may not survive.
-        //   3. A genuinely down service.
+        //      byte-match this site's origin -- or is unset entirely, falling
+        //      back to http://localhost:5173 -- the preflight is rejected and
+        //      the POST is never even sent. That is the only in-app condition
+        //      that yields "no reply" while GET /health (never preflighted)
+        //      stays green. See server/src/app.js and docs/DEPLOYMENT.md.
+        //   2. A genuinely down service.
+        // NOT a sleeping backend: axios sets no default timeout, so a cold
+        // start makes the request wait rather than fail here -- and if the host
+        // gives up first it returns a 502, which carries a response and lands
+        // in the branch above. Mentioning a sleep would send the operator to
+        // wait instead of checking CLIENT_URL, which is where the fault is.
         const base = import.meta.env.VITE_API_URL || '/api/v1 (same origin)';
         if (base.startsWith('http')) {
           setError(
-            `Can't reach the API at ${base} — the request got no reply. Most often the ` +
-            'backend is asleep: Render\'s free tier takes 30-50s to wake, so wait a moment ' +
-            "and try again. If it stays unreachable, CORS is blocking this site — on Render " +
-            "set CLIENT_URL to this site's exact URL (no trailing slash) and redeploy. " +
-            'See docs/DEPLOYMENT.md.'
+            `Can't reach the API at ${base} — the request got no reply. This is almost ` +
+            'always CORS: the browser sent an OPTIONS preflight and the API did not allow ' +
+            "this site's origin, so the login POST was never sent. On Render set CLIENT_URL " +
+            "to this site's exact URL (no trailing slash) and redeploy — the deploy log " +
+            'names the blocked origin. See docs/DEPLOYMENT.md.'
           );
         } else {
           setError(

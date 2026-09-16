@@ -15,12 +15,16 @@
 # asked for, and the build log says "Using Node.js version <X> (default)"
 # instead of the pinned 20.
 #
-# MINIMUM VIABLE ENV SET -- all three are REQUIRED or the process exits 1:
+# MINIMUM VIABLE ENV SET -- all REQUIRED or the process exits 1:
 #   MONGO_URI           Atlas connection string      (sync: false -> set it)
 #   JWT_ACCESS_SECRET   long random string           (sync: false -> set it)
 #   JWT_REFRESH_SECRET  a DIFFERENT random string    (sync: false -> set it)
-# Strongly recommended, or the deployed frontend is rejected by CORS:
-#   CLIENT_URL          exact Vercel origin, no trailing slash
+#   CLIENT_URL          exact frontend origin, no trailing slash
+# CLIENT_URL is required because Render is detected as a deployed environment
+# (see server/src/config/env.js). Leaving it unset boots an API whose /health is
+# green but whose CORS rejects every browser request -- the browser then sends no
+# POST at all and the UI reports "Can't reach the API ... got no reply". Failing
+# the deploy instead makes that a 1-minute fix.
 # Everything else below has a safe default or disables itself when unset.
 #
 # The frontend is hosted separately on Vercel. The database is MongoDB Atlas;
@@ -42,7 +46,7 @@ services:
       - key: NODE_VERSION
         value: "20"
       # Secrets / environment-specific values -- set these in the Render
-      # dashboard. The first three are REQUIRED: if any is missing the server
+      # dashboard. The first FOUR are REQUIRED: if any is missing the server
       # refuses to start and the deploy fails (see server/src/config/env.js).
       - key: MONGO_URI
         sync: false
@@ -50,6 +54,8 @@ services:
         sync: false
       - key: JWT_REFRESH_SECRET
         sync: false
+      # Exact frontend origin for CORS -- REQUIRED in this environment, no
+      # trailing slash (e.g. https://acc-app-shubham.vercel.app).
       # Render injects PORT automatically; the app reads process.env.PORT.
       - key: CLIENT_URL
         sync: false

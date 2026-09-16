@@ -161,7 +161,9 @@ Confirm `.env` files are **not** tracked (`git status` should not list any real
 **Required — the server exits `1` without them.** This is enforced at boot by
 [`server/src/config/env.js`](../server/src/config/env.js:1), which reports *every*
 missing variable in one message, so a single redeploy tells you everything you are
-missing instead of surfacing one variable per attempt.
+missing instead of surfacing one variable per attempt. Three are required
+everywhere; [`CLIENT_URL`](#required-in-a-deployed-environment) is added to the
+list automatically when the process detects a deployment.
 
 | Key | Value | Notes |
 |---|---|---|
@@ -169,15 +171,23 @@ missing instead of surfacing one variable per attempt.
 | `JWT_ACCESS_SECRET` | 96-char hex | Generated above |
 | `JWT_REFRESH_SECRET` | different 96-char hex | Generated above |
 
-**Strongly recommended.** Without `CLIENT_URL` the API still boots and its health
-check passes, but every request from the deployed frontend is rejected by CORS,
-because [`server/src/app.js`](../server/src/app.js:15) silently falls back to
-`http://localhost:5173`. A green health check with broken logins usually means
-this variable is missing.
+**Required in a deployed environment** — the API exits `1` without it (see
+[`server/src/config/env.js`](../server/src/config/env.js:1)). It is genuinely
+optional *only* for local development, where the `http://localhost:5173`
+fallback in [`server/src/app.js`](../server/src/app.js:28) is what you want.
+
+If `CLIENT_URL` is unset on Render the failure mode is nasty: the API boots, the
+`/health` check stays **green**, yet every request from the deployed frontend is
+rejected by CORS, because [`server/src/app.js`](../server/src/app.js:28) falls
+back to `http://localhost:5173`. `POST /auth/login` sends JSON, so it is not a
+CORS *simple request*; the browser sends an `OPTIONS` preflight first and, once
+that is rejected, never sends the `POST` at all. The app therefore reports **"Can't
+reach the API … the request got no reply"** against a perfectly healthy backend.
+This is why the deploy now **fails fast** instead of booting into that state.
 
 | Key | Value | Notes |
 |---|---|---|
-| `CLIENT_URL` | `https://<your-app>.vercel.app` | **Exact** Vercel URL — CORS origin. Set after step 3, then redeploy |
+| `CLIENT_URL` | `https://<your-app>.vercel.app` | **Exact** Vercel origin — no trailing slash. Required when `NODE_ENV=production` or on Render |
 | `SHARE_LINK_BASE_URL` | same as `CLIENT_URL` | Base for public invoice links (`/i/:token`) |
 
 **Optional — each has a working default or disables itself cleanly when unset:**
@@ -286,7 +296,8 @@ Accepted forms (all normalised by `parseAllowedOrigins()` in
 | `https://acc-app-shubham.vercel.app` | allowed |
 | `https://acc-app-shubham.vercel.app/` | allowed — trailing slash stripped |
 | `https://app.vercel.app,https://staging.vercel.app` | both allowed (comma-separated) |
-| *unset* | falls back to `http://localhost:5173` and logs a `[cors]` warning; **deployed calls are blocked** |
+| *unset* (local dev) | falls back to `http://localhost:5173` and logs a `[cors]` warning — intended for `npm run dev` |
+| *unset* (deployed) | **the deploy fails fast** (`Exited with status 1`): the process refuses to boot without `CLIENT_URL`, instead of turning on with a green health check and broken logins |
 
 The API warns in the deploy log whenever it blocks an origin, naming the value to
 set:
@@ -397,7 +408,7 @@ Notes:
 |---|---|---|
 | Login says **"Login failed (HTTP 405)..."** (or *"the request reached a static host, not the API"*) | `VITE_API_URL` was unset at build time, so the bundle fell back to the relative `/api/v1` and the login `POST` hit the **static Vercel host** instead of Render. Static hosts answer non-GET verbs with **405 Method Not Allowed** and a non-JSON body — note this app's Express `notFound` returns **404 JSON**, so a 405 proves the API was never reached. | Set `VITE_API_URL` = `https://<api>.onrender.com/api/v1` as a Vercel **Production** env var, then **Redeploy** (Vite inlines env vars at build time — editing the variable without redeploying changes nothing). The production build now fails fast if the var is missing ([`client/vite.config.js`](../client/vite.config.js:1)). Confirm in DevTools → Network that the `login` request URL is the Render host, not `*.vercel.app`. |
 | Login says **"Can't reach the API at …"** and the URL printed is a relative path (`/api/v1 (same origin)`) | `VITE_API_URL` was unset at build time, so the bundle fell back to `/api/v1` on the Vercel origin. The SPA rewrite in [`client/vercel.json`](../client/vercel.json) returns `index.html` for that path, so axios gets HTML instead of JSON and throws before credentials are checked. | Set `VITE_API_URL` = `https://<api>.onrender.com/api/v1` as a Vercel **Production** env var, then **Redeploy** (Vite inlines env vars at build time — editing the variable without redeploying changes nothing). The committed [`client/.env.production`](../client/.env.production) should already cover this. |
-| Login says **"Can't reach the API at https://… — the request got no reply"** (the URL is a real `https://` one) | **`VITE_API_URL` is already correct**, so it is *not* the cause — a wrong value would still have produced a response. The request produced **no HTTP response at all**, which means the browser never sent it (or never got an answer). In order of likelihood: **(1)** CORS — a JSON `POST` is not a *simple request*, so the browser sends an `OPTIONS` preflight first and, if `CLIENT_URL` does not byte-match the site origin, the `POST` is never sent; **(2)** Render's free tier was asleep (30–50s cold start) and the request timed out; **(3)** the service is genuinely down. | Check the Render log for `[cors] Blocked origin …` — that names the exact value to set. Then set `CLIENT_URL` = the site's exact origin (no trailing slash) and **Redeploy** Render; confirm with `npm run verify:deploy -- --api-url=https://<api>.onrender.com --client-url=https://<app>.vercel.app`. If instead `/api/v1/health` also fails, the service is down or waking — wait ~1 min and retry. |
+| Login says **"Can't reach the API at https://… — the request got no reply"** (the URL is a real `https://` one) | **`VITE_API_URL` is already correct**, so it is *not* the cause — a wrong value would still have produced a response. The request produced **no HTTP response at all**, which means the browser never sent it. That is **CORS**: a JSON `POST` is not a *simple request*, so the browser sends an `OPTIONS` preflight first and, if `CLIENT_URL` does not byte-match the site origin — or is unset entirely — the `POST` is never sent. A sleeping free-tier backend does **not** explain this: axios sets no default timeout, so a cold start makes the request wait, and a host that gives up first returns **502**, which carries a response and surface as *"Login failed (HTTP 502)"* instead. | Check the Render log for `[cors] Blocked origin …` (or `[cors] CLIENT_URL is not set …`) — that names the exact value to set. Set `CLIENT_URL` = the site's exact origin (no trailing slash) and **Redeploy** Render; the API now refuses to boot in a deployed environment without it, so a missing value shows up as a failed deploy rather than a healthy-but-unusable API. Confirm with `npm run verify:deploy -- --api-url=https://<api>.onrender.com --client-url=https://<app>.vercel.app`. If instead `/api/v1/health` also fails, the service is down — check the deploy log. |
 | Login says **"Invalid email or password"** | Correct credentials never seeded, or seeded against a different database | Run `npm run seed` with `MONGO_URI` pointed at the **same** database the Render API uses (see *Demo / client-review account*). |
 | Browser console: CORS / "blocked by CORS policy" | `CLIENT_URL` ≠ exact Vercel origin. If `CLIENT_URL` is **unset**, [`server/src/app.js`](../server/src/app.js:15) falls back to `http://localhost:5173`, so every deployed request is rejected. Because the failed request is the preflight `OPTIONS`, the app reports it as *"Can't reach the API"* — it never sees a status code to report | Set `CLIENT_URL` to the exact Vercel URL (no trailing slash) and redeploy Render. The API logs `[cors] Blocked origin …` with the value to use. Assert it with `npm run verify:deploy -- --api-url=https://<api>.onrender.com --client-url=https://<app>.vercel.app` |
 | 401 loops / cookies not set | Cookie sent over HTTPS but `CLIENT_URL` mismatch, or `withCredentials` broken by wrong base URL | Confirm `VITE_API_URL` includes `/api/v1` and `CLIENT_URL` is exact |

@@ -43,9 +43,40 @@ describe('startup env validation', () => {
         expect(missingVars(partial)).toEqual(['JWT_REFRESH_SECRET']);
     });
 
-    it('does not require CLIENT_URL, which has a built-in fallback', () => {
+    it('does not require CLIENT_URL locally, where the fallback is intentional', () => {
+        // Local dev (no NODE_ENV / no RENDER flag) keeps the localhost fallback.
         expect(missingVars(complete)).not.toContain('CLIENT_URL');
         expect(() => assertStartupEnv(complete)).not.toThrow();
+    });
+
+    it('requires CLIENT_URL in a deployed environment, where the fallback breaks CORS', () => {
+        // This is the defect the "Can't reach the API ... no reply" symptom
+        // points at: without CLIENT_URL the API still boots and /health stays
+        // green, but every browser request from the real frontend fails the
+        // CORS preflight and is never sent.
+        const env = { ...complete, NODE_ENV: 'production' };
+        expect(missingVars(env)).toContain('CLIENT_URL');
+        expect(() => assertStartupEnv(env)).toThrow(/CLIENT_URL/);
+    });
+
+    it('treats an empty or whitespace-only CLIENT_URL as missing when deployed', () => {
+        expect(missingVars({ ...complete, NODE_ENV: 'production', CLIENT_URL: '' })).toEqual([
+            'CLIENT_URL',
+        ]);
+        expect(missingVars({ ...complete, NODE_ENV: 'production', CLIENT_URL: '   ' })).toEqual([
+            'CLIENT_URL',
+        ]);
+    });
+
+    it('detects a Render deployment even when NODE_ENV is not set', () => {
+        const env = { ...complete, RENDER: 'true' };
+        expect(missingVars(env)).toContain('CLIENT_URL');
+    });
+
+    it('does not require CLIENT_URL once a deployed environment sets it', () => {
+        const env = { ...complete, NODE_ENV: 'production', CLIENT_URL: 'https://app.vercel.app' };
+        expect(missingVars(env)).toEqual([]);
+        expect(() => assertStartupEnv(env)).not.toThrow();
     });
 
     it('explains how to fix it, mentioning the host env rather than a .env file', () => {
@@ -53,5 +84,12 @@ describe('startup env validation', () => {
         expect(message).toMatch(/Render/);
         expect(message).toMatch(/Redeploy/);
         expect(message).toMatch(/MONGO_URI/);
+    });
+
+    it('explains that an unset CLIENT_URL rejects every deployed request (CORS)', () => {
+        const message = formatError(['CLIENT_URL']);
+        expect(message).toMatch(/CLIENT_URL/);
+        expect(message).toMatch(/CORS/i);
+        expect(message).toMatch(/no trailing slash/i);
     });
 });

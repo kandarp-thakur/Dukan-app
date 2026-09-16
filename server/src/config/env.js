@@ -10,24 +10,56 @@
  * whichever variable happens to be read first, so each missing value costs a
  * full redeploy cycle to discover.
  *
- * Only variables the running API genuinely cannot function without are
- * required. Deliberately optional:
- *   - CLIENT_URL          falls back to http://localhost:5173 in app.js
+ * Deliberately optional:
  *   - SHARE_LINK_*        only used when minting public invoice links
  *   - SMTP_* / MAIL_FROM  email action disables itself cleanly (emailService.js)
  */
 
 const REQUIRED = ['MONGO_URI', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET'];
 
+/**
+ * Required only when deployed -- never for local development.
+ *
+ * CLIENT_URL is the CORS allowlist (see app.js). When it is unset the API still
+ * boots and its `/health` check stays green, but it falls back to
+ * `http://localhost:5173` and rejects every browser request from the real
+ * frontend. Because `POST /auth/login` sends JSON it is not a CORS *simple
+ * request*, so the browser sends an `OPTIONS` preflight first; when that is
+ * rejected the `POST` is never sent and the app sees **no reply at all** --
+ * surfacing as "Can't reach the API at https://<api>/api/v1" even though the
+ * backend is healthy. That is a deploy-time configuration fault, so it must
+ * fail the deploy rather than hide behind a green health check.
+ */
+const DEPLOYED_REQUIRED = ['CLIENT_URL'];
+
 const DESCRIPTIONS = {
     MONGO_URI: 'MongoDB Atlas connection string, database name included.',
     JWT_ACCESS_SECRET: 'any long random string (>=32 chars).',
     JWT_REFRESH_SECRET: 'a DIFFERENT long random string.',
+    CLIENT_URL:
+        'the exact frontend origin allowed by CORS, e.g. ' +
+        'https://<app>.vercel.app -- no trailing slash. Without it the API ' +
+        'falls back to http://localhost:5173 and rejects every deployed request.',
 };
+
+/**
+ * True when running on a host (Render, or NODE_ENV=production) rather than a
+ * developer machine, where the localhost fallback is intentional.
+ */
+function isDeployed(env = process.env) {
+    if (String(env.NODE_ENV || '').toLowerCase() === 'production') return true;
+    // Render sets RENDER=true on every service; RENDER_EXTERNAL_URL is the
+    // public URL, so either is a reliable signal even if NODE_ENV is unset.
+    return Boolean(env.RENDER || env.RENDER_EXTERNAL_URL);
+}
 
 /** Returns the required keys that are absent, empty, or whitespace-only. */
 function missingVars(env = process.env) {
-    return REQUIRED.filter((key) => {
+    const required = isDeployed(env)
+        ? [...REQUIRED, ...DEPLOYED_REQUIRED]
+        : REQUIRED;
+
+    return required.filter((key) => {
         const value = env[key];
         return value === undefined || value === null || String(value).trim() === '';
     });
@@ -47,10 +79,16 @@ function formatError(missing) {
         lines.push(`  ${key.padEnd(20)} ${DESCRIPTIONS[key]}`);
     }
 
+    // Only suggest secret generation when a secret is actually missing.
+    if (missing.some((key) => key.startsWith('JWT_'))) {
+        lines.push(
+            '',
+            'Generate a secret with:',
+            '  node -e "console.log(require(\'crypto\').randomBytes(48).toString(\'hex\'))"'
+        );
+    }
+
     lines.push(
-        '',
-        'Generate a secret with:',
-        '  node -e "console.log(require(\'crypto\').randomBytes(48).toString(\'hex\'))"',
         '',
         'For local development, copy server/.env.example to server/.env instead.'
     );
@@ -66,4 +104,11 @@ function assertStartupEnv(env = process.env) {
     }
 }
 
-module.exports = { REQUIRED, missingVars, formatError, assertStartupEnv };
+module.exports = {
+    REQUIRED,
+    DEPLOYED_REQUIRED,
+    isDeployed,
+    missingVars,
+    formatError,
+    assertStartupEnv,
+};
