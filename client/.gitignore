@@ -12,11 +12,16 @@ dist
 dist-ssr
 *.local
 
-# Environment secrets -- keep the tracked templates.
+# Environment secrets -- ignore every variant, but keep the tracked templates.
+# .env.production holds only the PUBLIC production API base URL (no secrets), so
+# it is tracked on purpose: the production build guard in vite.config.js aborts
+# when VITE_API_URL is absent, and committing this file lets Vercel/CI build
+# without any dashboard variable. A real environment variable still overrides it.
 .env
 .env.*
 !.env.example
 !.env.production.example
+!.env.production
 
 # Editor directories and files
 .vscode/*

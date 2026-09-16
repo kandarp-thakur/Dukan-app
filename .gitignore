@@ -5,7 +5,11 @@ uploads/
 .mongodb/
 
 # Environment secrets -- ignore every variant, but keep the tracked templates.
+# client/.env.production is tracked on purpose: it holds only the public
+# production API base URL (no secrets) so production builds succeed without a
+# host dashboard variable. Real environment variables still override it.
 .env
 .env.*
 !.env.example
 !.env.production.example
+!client/.env.production
