@@ -249,7 +249,7 @@ curl https://acc-app-api.onrender.com/api/v1/health
    Vercel **Environment Variable** (Production) `VITE_API_URL`, e.g. for a custom
    domain (`https://api.yourdomain.com/api/v1`). A real environment variable
    overrides the committed file (see step 6). Include the `/api/v1` suffix.
-5. Deploy. Copy the production URL, e.g. `https://acc-app-shubham.vercel.app`.
+5. Deploy. Copy the production URL, e.g. `https://dukan-app-nine.vercel.app`.
 
 > **The build fails fast if `VITE_API_URL` is missing.** [`client/vite.config.js`](../client/vite.config.js:1)
 > aborts a `production` build when no value is found from either the committed
@@ -276,7 +276,10 @@ cookies, so the value must be an exact origin — never `*`, which browsers reje
 for credentialed requests.
 
 1. In Render, set `CLIENT_URL` and `SHARE_LINK_BASE_URL` to the Vercel URL
-   from step 3 (e.g. `https://acc-app-shubham.vercel.app`, no trailing slash).
+   from step 3 (e.g. `https://dukan-app-nine.vercel.app`, no trailing slash).
+   Copy it from the browser address bar — a typo, a trailing slash, or the
+   wrong project name (e.g. `acc-app-shubham` vs `dukan-app-nine`) is the
+   single most common cause of the "got no reply" login failure.
 2. Redeploy the Render service (env changes take effect on the next deploy).
 3. If a later deploy changes the Vercel URL, update these and redeploy.
 
@@ -293,9 +296,9 @@ Accepted forms (all normalised by `parseAllowedOrigins()` in
 
 | `CLIENT_URL` value | Result |
 |---|---|
-| `https://acc-app-shubham.vercel.app` | allowed |
-| `https://acc-app-shubham.vercel.app/` | allowed — trailing slash stripped |
-| `https://app.vercel.app,https://staging.vercel.app` | both allowed (comma-separated) |
+| `https://dukan-app-nine.vercel.app` | allowed |
+| `https://dukan-app-nine.vercel.app/` | allowed — trailing slash stripped |
+| `https://dukan-app-nine.vercel.app,https://staging.vercel.app` | both allowed (comma-separated) |
 | *unset* (local dev) | falls back to `http://localhost:5173` and logs a `[cors]` warning — intended for `npm run dev` |
 | *unset* (deployed) | **the deploy fails fast** (`Exited with status 1`): the process refuses to boot without `CLIENT_URL`, instead of turning on with a green health check and broken logins |
 
@@ -303,7 +306,7 @@ The API warns in the deploy log whenever it blocks an origin, naming the value t
 set:
 
 ```
-[cors] Blocked origin https://acc-app-shubham.vercel.app. Allowed: http://localhost:5173. ...
+[cors] Blocked origin https://dukan-app-nine.vercel.app. Allowed: http://localhost:5173. ...
 ```
 
 **Verify it, don't assume it.** The health check cannot catch a CORS
@@ -312,7 +315,7 @@ misconfiguration; assert the preflight directly:
 ```sh
 npm run verify:deploy -- \
   --api-url=https://acc-app-api.onrender.com \
-  --client-url=https://acc-app-shubham.vercel.app
+  --client-url=https://dukan-app-nine.vercel.app
 ```
 
 The `CORS allows <origin>` check must pass, and should report `credentials

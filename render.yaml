@@ -55,7 +55,7 @@ services:
       - key: JWT_REFRESH_SECRET
         sync: false
       # Exact frontend origin for CORS -- REQUIRED in this environment, no
-      # trailing slash (e.g. https://acc-app-shubham.vercel.app).
+      # trailing slash (e.g. https://dukan-app-nine.vercel.app).
       # Render injects PORT automatically; the app reads process.env.PORT.
       - key: CLIENT_URL
         sync: false

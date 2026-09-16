@@ -35,12 +35,12 @@ describe('CORS', () => {
     });
 
     it('allows the exact CLIENT_URL origin and permits credentials', async () => {
-        const app = loadApp('https://acc-app-shubham.vercel.app');
+        const app = loadApp('https://dukan-app-nine.vercel.app');
 
-        const res = await preflight(app, 'https://acc-app-shubham.vercel.app');
+        const res = await preflight(app, 'https://dukan-app-nine.vercel.app');
 
         expect(res.headers['access-control-allow-origin']).toBe(
-            'https://acc-app-shubham.vercel.app'
+            'https://dukan-app-nine.vercel.app'
         );
         expect(res.headers['access-control-allow-credentials']).toBe('true');
     });
@@ -48,19 +48,19 @@ describe('CORS', () => {
     it('tolerates a trailing slash on CLIENT_URL', async () => {
         // The Render dashboard makes it easy to paste "https://app.vercel.app/".
         // That must still match the browser's Origin, which never has a slash.
-        const app = loadApp('https://acc-app-shubham.vercel.app/');
+        const app = loadApp('https://dukan-app-nine.vercel.app/');
 
-        const res = await preflight(app, 'https://acc-app-shubham.vercel.app');
+        const res = await preflight(app, 'https://dukan-app-nine.vercel.app');
 
         expect(res.headers['access-control-allow-origin']).toBe(
-            'https://acc-app-shubham.vercel.app'
+            'https://dukan-app-nine.vercel.app'
         );
     });
 
     it('allows each origin in a comma-separated CLIENT_URL', async () => {
         // Production plus a Vercel preview/staging origin.
         const app = loadApp(
-            'https://acc-app-shubham.vercel.app, https://acc-app-staging.vercel.app'
+            'https://dukan-app-nine.vercel.app, https://acc-app-staging.vercel.app'
         );
 
         const res = await preflight(app, 'https://acc-app-staging.vercel.app');
@@ -71,7 +71,7 @@ describe('CORS', () => {
     });
 
     it('does not echo an origin that is not allowlisted', async () => {
-        const app = loadApp('https://acc-app-shubham.vercel.app');
+        const app = loadApp('https://dukan-app-nine.vercel.app');
 
         const res = await preflight(app, 'https://evil.example.com');
 
