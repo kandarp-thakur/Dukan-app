@@ -54,6 +54,24 @@ describe('Login', () => {
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
     expect(await screen.findByText(/can't reach the api/i)).toBeInTheDocument();
   });
+
+  // An HTTP 405 with no API message means a static host answered the POST
+  // instead of Express (whose notFound handler returns 404 JSON). This is the
+  // signature of a build without VITE_API_URL, so surface the cause rather
+  // than a bare status code.
+  it('explains an HTTP 405 as a static-host / missing VITE_API_URL problem', async () => {
+    mockLogin.mockRejectedValueOnce({ response: { status: 405, data: '<html></html>' } });
+    render(
+      <MemoryRouter>
+        <Login />
+      </MemoryRouter>
+    );
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'demo@dukan.app' } });
+    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'Demo@12345' } });
+    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    expect(await screen.findByText(/reached a static host, not the api/i)).toBeInTheDocument();
+    expect(screen.getByText(/VITE_API_URL/)).toBeInTheDocument();
+  });
 });
 
 describe('Register', () => {

@@ -21,6 +21,16 @@ export default function Login() {
       if (err.response?.data?.message) {
         // The API answered with a reason (e.g. 401 "Invalid email or password").
         setError(err.response.data.message);
+      } else if (err.response?.status === 405) {
+        // 405 with no API message means a static host answered the POST — it
+        // never reached Express (whose notFound handler returns 404 JSON). The
+        // usual cause is a build without VITE_API_URL, so the bundle fell back
+        // to the same-origin /api/v1 and hit the frontend host.
+        setError(
+          'Login failed: the request reached a static host, not the API (HTTP 405). ' +
+          'VITE_API_URL is likely unset for this build — set it to your API base and redeploy. ' +
+          'See docs/DEPLOYMENT.md.'
+        );
       } else if (err.response) {
         setError(`Login failed (HTTP ${err.response.status}). Please try again.`);
       } else {

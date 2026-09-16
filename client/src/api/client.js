@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { resolveApiBaseUrl } from './baseUrl';
 
 let accessToken = null;
 
@@ -7,7 +8,7 @@ export const setAccessToken = (token) => {
 };
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
+  baseURL: resolveApiBaseUrl(),
   withCredentials: true,
 });
 
