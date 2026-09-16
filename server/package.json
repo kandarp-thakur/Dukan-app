@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
+    "seed": "node src/scripts/seedDemo.js",
     "test": "jest --runInBand"
   },
   "dependencies": {

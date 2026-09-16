@@ -38,6 +38,22 @@ describe('Login', () => {
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
     expect(await screen.findByText('Invalid email or password')).toBeInTheDocument();
   });
+
+  // A rejected request with no `.response` means the network layer failed —
+  // the POST never reached an API. Saying "check your password" here sends the
+  // operator down the wrong path; name the misconfiguration instead.
+  it('distinguishes an unreachable API from bad credentials', async () => {
+    mockLogin.mockRejectedValueOnce(new Error('Network Error'));
+    render(
+      <MemoryRouter>
+        <Login />
+      </MemoryRouter>
+    );
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'demo@dukan.app' } });
+    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'Demo@12345' } });
+    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    expect(await screen.findByText(/can't reach the api/i)).toBeInTheDocument();
+  });
 });
 
 describe('Register', () => {

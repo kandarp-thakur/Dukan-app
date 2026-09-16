@@ -213,10 +213,50 @@ After domains are live, update `CLIENT_URL`, `SHARE_LINK_BASE_URL` (Render), and
 
 ---
 
+## Demo / client-review account
+
+There is **no built-in default login** — accounts only exist after someone
+registers, and passwords are stored as bcrypt hashes. To hand a client working
+credentials without them signing up, seed a demo account:
+
+```bash
+cd server
+npm run seed
+```
+
+This creates (or resets) a business + owner account plus a small catalog,
+customers and some sales so the dashboard is not empty. Default credentials:
+
+| Field | Value |
+|---|---|
+| Email | `demo@dukan.app` |
+| Password | `Demo@12345` |
+| Business | Demo Traders |
+
+Override any of them with env vars:
+
+```bash
+SEED_EMAIL=client@example.com SEED_PASSWORD='Client@2026' npm run seed
+```
+
+Notes:
+
+- The seeder is **idempotent** — re-running it resets that business's demo data
+  rather than duplicating it, and re-hashes the password so the login always works.
+- It runs against whatever `MONGO_URI` is set in `server/.env`, so to seed the
+  **production** database point `MONGO_URI` at Atlas first (e.g. via a one-off
+  Render job or by running it locally with the Atlas URI).
+- **Change the password before sharing** the app publicly; `Demo@12345` is
+  intentionally simple and lives in source control.
+
+---
+
 ## Troubleshooting
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
+| Login says **"Can't reach the API at ..."** | `VITE_API_URL` was unset at build time, so the bundle fell back to `/api/v1` on the Vercel origin. The SPA rewrite in [`client/vercel.json`](../client/vercel.json) then returns `index.html` for that path, so axios gets HTML instead of JSON and throws before credentials are checked. | Set `VITE_API_URL` = `https://<api>.onrender.com/api/v1` as a Vercel **Production** env var, then **Redeploy** (Vite inlines env vars at build time — editing the variable without redeploying changes nothing). Confirm in DevTools → Network that the `login` request URL is the Render host, not `*.vercel.app`. |
+| Login says **"Invalid email or password"** | Correct credentials never seeded, or seeded against a different database | Run `npm run seed` with `MONGO_URI` pointed at the **same** database the Render API uses (see *Demo / client-review account*). |
 | Browser console: CORS / "blocked by CORS policy" | `CLIENT_URL` ≠ exact Vercel origin | Set `CLIENT_URL` to the exact Vercel URL (no trailing slash) and redeploy Render |
 | 401 loops / cookies not set | Cookie sent over HTTPS but `CLIENT_URL` mismatch, or `withCredentials` broken by wrong base URL | Confirm `VITE_API_URL` includes `/api/v1` and `CLIENT_URL` is exact |
 | Backend build crashes: "MONGO_URI is not set" | Env var missing on Render | Add `MONGO_URI` in the Render dashboard and redeploy |

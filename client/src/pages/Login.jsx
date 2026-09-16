@@ -18,7 +18,19 @@ export default function Login() {
       await login(form.email, form.password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Is the server running?');
+      if (err.response?.data?.message) {
+        // The API answered with a reason (e.g. 401 "Invalid email or password").
+        setError(err.response.data.message);
+      } else if (err.response) {
+        setError(`Login failed (HTTP ${err.response.status}). Please try again.`);
+      } else {
+        // No response at all: the POST never reached an API. Usual causes are an
+        // unset VITE_API_URL (so the request hits the hosting origin and the SPA
+        // rewrite returns HTML) or a stopped/cold backend. Name the target so the
+        // operator can see what it was actually talking to.
+        const base = import.meta.env.VITE_API_URL || '/api/v1 (same origin)';
+        setError(`Can't reach the API at ${base}. Check the backend is running and that VITE_API_URL is set correctly.`);
+      }
     } finally {
       setSubmitting(false);
     }
