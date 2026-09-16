@@ -71,9 +71,32 @@ Confirm `.env` files are **not** tracked (`git status` should not list any real
    - Authentication: Password.
    - Username: e.g. `acc-app-user`; generate a strong password and save it.
    - Privileges: *Read and write to any database* (or scope it to `acc-app`).
-3. **Network Access** → *Add IP Address* → **Allow access from anywhere**
-   (`0.0.0.0/0`). Render's free tier does not provide static outbound IPs, so a
-   broad allowlist is required unless you pay for a static IP add-on.
+3. **Network Access** → *Add IP Address*. What you add depends on how your Render
+   service gets its outbound IP:
+
+   - **Free tier, or no static IP add-on:** Render's egress IPs are dynamic and
+     unpublished, so there is no specific range to allowlist. Add
+     **`0.0.0.0/0`** (*Allow access from anywhere*). Your defence is then the
+     Atlas database user: keep it scoped to read/write on `acc-app` only, with a
+     strong unique password.
+   - **Static IP add-on attached:** do **not** use `0.0.0.0/0`. Add **only** the
+     CIDR blocks listed under that service's **Connect → Outbound IP addresses**.
+     Those blocks are assigned to your service and are the only addresses it will
+     ever connect from.
+
+   > Not sure which case applies? Open the service's **Connect** tab. A service
+   > without a static IP add-on lists no outbound addresses at all.
+   >
+   > ⚠️ **Never allowlist IPs from another provider, from your own ISP, or copied
+   > from a blog post.** The allowlist is matched against the *source* address of
+   > the incoming connection. If the ranges do not match what Render reports for
+   > *this specific service*, MongoDB rejects every connection from Render and you
+   > get `MongoServerSelectionError` / timeouts — i.e. adding the wrong range is
+   > worse than adding none.
+   >
+   > Note this is a **separate concern from `MONGO_URI` being unset**. If the
+   > process exits `1` on boot, it never reached the network and no allowlist
+   > change can help (see *Troubleshooting*).
 4. **Database** → *Connect* → *Drivers* → copy the connection string. It looks like:
    ```
    mongodb+srv://acc-app-user:<password>@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
@@ -316,7 +339,7 @@ Notes:
 | Build log says `Using Node.js version <X> (default)` with `<X>` not `20` | Neither [`render.yaml`](../render.yaml:23) nor the committed [`.node-version`](../server/.node-version) was read — usually because the service's **Root Directory** is neither `server` nor the repo root | Set **Root Directory** = `server`, or add env var `NODE_VERSION` = `20` under **Environment**. Non-fatal, but loses the tested-runtime guarantee. |
 | Boot log: `Failed to start server: MONGO_URI is not set` then `Exited with status 1` | The `MONGO_URI` env var is not present in the running service. Because [`server/src/config/db.js`](../server/src/config/db.js:4) throws before `app.listen`, the process exits `1` and Render marks the deploy failed — **this is a deploy-time failure, not a runtime one**. Most often the service is a manual **Web Service** rather than a **Blueprint** service, so the `sync: false` prompt in [`render.yaml`](../render.yaml:26) was never shown; alternatively the value was added but the service was not redeployed. | Render dashboard → the service → **Environment** → add `MONGO_URI` (the Atlas string from step 1) → **Save** → **Redeploy** (env changes only take effect on a new deploy). If the value was never prompted for, recreate the service via **New + → Blueprint** so Render reads [`render.yaml`](../render.yaml:1) and prompts for every `sync: false` key. `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET` are `sync: false` too — set them now, or the API boots but login fails later. |
 | Log line `◇ injected env (0) from .env` (or `enable debugging { debug: true }`) | **Not an error.** [`server/src/server.js`](../server/src/server.js:1) calls `require('dotenv').config()`, and there is no `.env` in the deployed bundle — correct, since [`.gitignore`](../.gitignore:8) excludes it and secrets live in the Render dashboard | Ignore it. Read the *next* line for the real status (`MongoDB connected` on success). The `(0)` count refers only to file-loaded vars; dashboard vars never appear in it. |
-| Mongo connection timeout | Atlas IP allowlist blocks Render | Add `0.0.0.0/0` in Atlas *Network Access* |
+| `Mongo connection timeout` / `MongoServerSelectionError` | Atlas IP allowlist is missing Render's egress, or was set to ranges that are not Render's. **Confirm this is a genuine timeout first**: the log shows an attempted connection and then times out. If instead the process exits `1` before connecting, that is the missing-`MONGO_URI` case in the row above — a completely different fix | No static IP add-on: add `0.0.0.0/0` in Atlas *Network Access*. With a static IP add-on: add only the outbound CIDRs from the service's **Connect** tab. Never add IPs belonging to another provider — a wrong range blocks Render entirely |
 | `404 NOT_FOUND` on **every** URL, incl. the site root | Vercel project **Root Directory** is not `client`, so [`client/vercel.json`](../client/vercel.json) (and its SPA rewrite) is never applied | Project → Settings → General → **Root Directory** = `client`, then **Redeploy**. (A root [`vercel.json`](../vercel.json) is also provided as a fallback for root-directory builds.) |
 | Deep link 404 on refresh (site root still works) | SPA rewrite missing or not deployed | Confirm [`client/vercel.json`](../client/vercel.json) (or root [`vercel.json`](../vercel.json)) is present, committed, and part of the deployed commit |
 | First request slow (~40s) | Render free tier cold start | Expected; upgrade instance or keep it warm |
