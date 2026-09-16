@@ -230,15 +230,25 @@ curl https://acc-app-api.onrender.com/api/v1/health
 2. **Root Directory:** `client` (see warning above). Framework preset should detect
    **Vite** (build `npm run build`, output `dist`).
    [`client/vercel.json`](../client/vercel.json) supplies these plus the SPA rewrite.
-3. Add an **Environment Variable** (Production):
-   - `VITE_API_URL` = `https://acc-app-api.onrender.com/api/v1`
-     (include the `/api/v1` suffix).
-4. Deploy. Copy the production URL, e.g. `https://acc-app-shubham.vercel.app`.
+3. **No environment variable is required** — the repo tracks
+   [`client/.env.production`](../client/.env.production) with
+   `VITE_API_URL=https://acc-app-api.onrender.com/api/v1`, which Vite loads
+   automatically for a production build. This file holds only the **public API
+   base URL** (no secrets), so it is safe to commit.
+4. *(Optional override)* To point the deployment at a **different** API, add a
+   Vercel **Environment Variable** (Production) `VITE_API_URL`, e.g. for a custom
+   domain (`https://api.yourdomain.com/api/v1`). A real environment variable
+   overrides the committed file (see step 6). Include the `/api/v1` suffix.
+5. Deploy. Copy the production URL, e.g. `https://acc-app-shubham.vercel.app`.
 
-> **The build now fails fast if `VITE_API_URL` is missing.** [`client/vite.config.js`](../client/vite.config.js:1)
-> aborts a `production` build when `VITE_API_URL` is unset, so a deployment can
-> never silently ship a bundle that talks to the static host. If you run
-> `npm run build --prefix client` locally you must export `VITE_API_URL` first.
+> **The build fails fast if `VITE_API_URL` is missing.** [`client/vite.config.js`](../client/vite.config.js:1)
+> aborts a `production` build when no value is found from either the committed
+> [`client/.env.production`](../client/.env.production) **or** an environment
+> variable. The committed file satisfies this guard on any host — including one
+> where no dashboard variable was created — so a deployment can never silently
+> ship a bundle that talks to the static host (the cause of the login HTTP 405).
+> If you edit or move that file, run `npm run build --prefix client` locally to
+> confirm the build still passes.
 
 The rewrite `"/((?!assets/).*)" → "/index.html"` sends every non-asset path to
 `index.html` so client-side routes (`/invoices`, `/customers`, `/i/:token`, …)
@@ -369,6 +379,12 @@ Notes:
 - Never commit real `.env` files. Root [`.gitignore`](../.gitignore) and
   [`client/.gitignore`](../client/.gitignore) ignore `.env` and all `.env.*`
   variants while keeping `*.example` templates.
+- **One deliberate exception:** [`client/.env.production`](../client/.env.production)
+  is tracked on purpose. It contains only the **public** production API base URL
+  (no secrets) and lets a production build succeed without any host dashboard
+  variable — the build guard in [`client/vite.config.js`](../client/vite.config.js:1)
+  fails when `VITE_API_URL` is unset. Do **not** add secrets to it; a real
+  environment variable always overrides it.
 - Secret values live only in the Render / Vercel dashboards.
 - Rotate `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` by changing them in Render
   and redeploying — this invalidates all existing sessions.
