@@ -1,0 +1,61 @@
+# Continuous integration.
+#
+# Purpose: keep a broken commit from ever reaching Render. Render deploys on
+# push, so without this a red test suite ships straight to your users.
+#
+# Scope is deliberately the server only. The client job is omitted until the
+# in-progress client changes are committed, so CI cannot fail for reasons
+# unrelated to this workflow.
+
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  server:
+    name: Server (node 20)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: server
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # tests/setupTestDB.js spins up mongodb-memory-server, which downloads a
+      # mongod binary on first run. Cache it so CI does not re-download every time.
+      - name: Cache mongodb-memory-server binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/mongodb-binaries
+          key: mongodb-binaries-${{ runner.os }}-${{ hashFiles('server/package-lock.json') }}
+
+      - name: Run tests
+        run: npm test
+        env:
+          MONGOMS_DOWNLOAD_DIR: ~/.cache/mongodb-binaries
+
+      # The secrets here are throwaway values for tests only. Real secrets live
+      # in the Render dashboard and must never appear in this file.
+      - name: Verify secrets are not committed
+        working-directory: .
+        run: |
+          if git ls-files --error-unmatch server/.env >/dev/null 2>&1; then
+            echo "::error::server/.env is tracked by git. Remove it from the index: git rm --cached server/.env"
+            exit 1
+          fi
+          echo "server/.env is not tracked."
