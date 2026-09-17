@@ -76,6 +76,27 @@ describe('Login', () => {
     expect(screen.getByText(/CLIENT_URL/)).toBeInTheDocument();
   });
 
+  // The exact origin is what has to be allowlisted, and getting it subtly wrong
+  // (yesterday's Vercel hostname, a trailing slash) is what caused the outage.
+  // The message must print it verbatim so the operator can copy it, not retype it.
+  it('prints the exact browser origin so CLIENT_URL can be copied verbatim', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://acc-app-api.onrender.com/api/v1');
+    mockLogin.mockRejectedValueOnce(new Error('Network Error'));
+    render(
+      <MemoryRouter>
+        <Login />
+      </MemoryRouter>
+    );
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'demo@dukan.app' } });
+    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'Demo@12345' } });
+    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+
+    const origin = window.location.origin;
+    expect(origin).toBeTruthy();
+    expect(await screen.findByText(new RegExp(`origin \\(${origin}\\)`))).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(`CLIENT_URL to exactly ${origin}`))).toBeInTheDocument();
+  });
+
   // An HTTP 405 with no API message means a static host answered the POST
   // instead of Express (whose notFound handler returns 404 JSON). This is the
   // signature of a build without VITE_API_URL, so surface the cause rather

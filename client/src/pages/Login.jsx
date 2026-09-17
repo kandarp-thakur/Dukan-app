@@ -53,12 +53,17 @@ export default function Login() {
         // wait instead of checking CLIENT_URL, which is where the fault is.
         const base = import.meta.env.VITE_API_URL || '/api/v1 (same origin)';
         if (base.startsWith('http')) {
+          // `window.location.origin` IS the exact string the API has to allowlist.
+          // Printing it removes the guesswork that has actually caused this outage:
+          // an outdated Vercel hostname or an invisible trailing slash. The value
+          // can be copied straight out of the message (or from the console).
+          const origin = window.location.origin;
           setError(
             `Can't reach the API at ${base} — the request got no reply. This is almost ` +
             'always CORS: the browser sent an OPTIONS preflight and the API did not allow ' +
-            "this site's origin, so the login POST was never sent. On Render set CLIENT_URL " +
-            "to this site's exact URL (no trailing slash) and redeploy — the deploy log " +
-            'names the blocked origin. See docs/DEPLOYMENT.md.'
+            `this site's origin (${origin}), so the login POST was never sent. On Render set ` +
+            `CLIENT_URL to exactly ${origin} (no trailing slash) and redeploy — the deploy ` +
+            'log names the blocked origin. See docs/DEPLOYMENT.md.'
           );
         } else {
           setError(
