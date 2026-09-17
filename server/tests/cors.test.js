@@ -35,12 +35,12 @@ describe('CORS', () => {
     });
 
     it('allows the exact CLIENT_URL origin and permits credentials', async () => {
-        const app = loadApp('https://dukan-app-nine.vercel.app');
+        const app = loadApp('https://dukan-sigma.vercel.app');
 
-        const res = await preflight(app, 'https://dukan-app-nine.vercel.app');
+        const res = await preflight(app, 'https://dukan-sigma.vercel.app');
 
         expect(res.headers['access-control-allow-origin']).toBe(
-            'https://dukan-app-nine.vercel.app'
+            'https://dukan-sigma.vercel.app'
         );
         expect(res.headers['access-control-allow-credentials']).toBe('true');
     });
@@ -48,19 +48,19 @@ describe('CORS', () => {
     it('tolerates a trailing slash on CLIENT_URL', async () => {
         // The Render dashboard makes it easy to paste "https://app.vercel.app/".
         // That must still match the browser's Origin, which never has a slash.
-        const app = loadApp('https://dukan-app-nine.vercel.app/');
+        const app = loadApp('https://dukan-sigma.vercel.app/');
 
-        const res = await preflight(app, 'https://dukan-app-nine.vercel.app');
+        const res = await preflight(app, 'https://dukan-sigma.vercel.app');
 
         expect(res.headers['access-control-allow-origin']).toBe(
-            'https://dukan-app-nine.vercel.app'
+            'https://dukan-sigma.vercel.app'
         );
     });
 
     it('allows each origin in a comma-separated CLIENT_URL', async () => {
         // Production plus a Vercel preview/staging origin.
         const app = loadApp(
-            'https://dukan-app-nine.vercel.app, https://acc-app-staging.vercel.app'
+            'https://dukan-sigma.vercel.app, https://acc-app-staging.vercel.app'
         );
 
         const res = await preflight(app, 'https://acc-app-staging.vercel.app');
@@ -70,8 +70,27 @@ describe('CORS', () => {
         );
     });
 
+    it('allows both Vercel hostnames when Vercel hands out more than one', async () => {
+        // Vercel assigns a different hostname per deployment. Listing every
+        // hostname in one comma-separated CLIENT_URL keeps every origin working
+        // without a second redeploy each time the URL changes.
+        const app = loadApp(
+            'https://dukan-sigma.vercel.app,https://dukan-app-nine.vercel.app'
+        );
+
+        const first = await preflight(app, 'https://dukan-sigma.vercel.app');
+        expect(first.headers['access-control-allow-origin']).toBe(
+            'https://dukan-sigma.vercel.app'
+        );
+
+        const second = await preflight(app, 'https://dukan-app-nine.vercel.app');
+        expect(second.headers['access-control-allow-origin']).toBe(
+            'https://dukan-app-nine.vercel.app'
+        );
+    });
+
     it('does not echo an origin that is not allowlisted', async () => {
-        const app = loadApp('https://dukan-app-nine.vercel.app');
+        const app = loadApp('https://dukan-sigma.vercel.app');
 
         const res = await preflight(app, 'https://evil.example.com');
 

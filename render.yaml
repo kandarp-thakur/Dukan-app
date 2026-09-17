@@ -55,7 +55,10 @@ services:
       - key: JWT_REFRESH_SECRET
         sync: false
       # Exact frontend origin for CORS -- REQUIRED in this environment, no
-      # trailing slash (e.g. https://dukan-app-nine.vercel.app).
+      # trailing slash (e.g. https://dukan-sigma.vercel.app).
+      # Vercel hands out a different hostname per deployment, so list every one
+      # you use, comma-separated (e.g. "https://dukan-sigma.vercel.app,https://
+      # dukan-app-nine.vercel.app") -- or assign a stable production domain.
       # Render injects PORT automatically; the app reads process.env.PORT.
       - key: CLIENT_URL
         sync: false

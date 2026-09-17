@@ -74,7 +74,7 @@ describe('startup env validation', () => {
     });
 
     it('does not require CLIENT_URL once a deployed environment sets it', () => {
-        const env = { ...complete, NODE_ENV: 'production', CLIENT_URL: 'https://dukan-app-nine.vercel.app' };
+        const env = { ...complete, NODE_ENV: 'production', CLIENT_URL: 'https://dukan-sigma.vercel.app' };
         expect(missingVars(env)).toEqual([]);
         expect(() => assertStartupEnv(env)).not.toThrow();
     });
