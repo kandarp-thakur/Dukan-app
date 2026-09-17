@@ -11,7 +11,7 @@ This project deploys as three independent tiers, each from the same Git repo:
 ```
 Browser
   │
-  ├─► Frontend (Vercel)                 VITE_API_URL = https://acc-app-api.onrender.com/api/v1
+  ├─► Frontend (Vercel)                 VITE_API_URL = https://acc-app-api-0bon.onrender.com/api/v1
   │        │
   │        ▼
   └─► Backend (Render Web Service)      start: node src/server.js  (PORT injected by Render)
@@ -154,7 +154,17 @@ Confirm `.env` files are **not** tracked (`git status` should not list any real
 3. Set the environment variables (values from the table below). `sync: false`
    keys in `render.yaml` appear as blanks for you to fill.
 4. Deploy. Wait for the build to finish and the service to report **Live**.
-5. Copy the service URL, e.g. `https://acc-app-api.onrender.com`.
+5. Copy the service URL from the deploy log's
+   `==> Available at your primary URL https://…` line — e.g.
+   `https://acc-app-api-0bon.onrender.com`.
+   Use that value **verbatim**. Render appends a suffix such as `-0bon` when the
+   requested service name is already taken, so the public host can differ from
+   `render.yaml`'s `name`. A frontend pointed at a hostname that is **not** this
+   service receives **no response at all**, which the UI reports as *"Can't reach
+   the API … got no reply"* — the identical wording a CORS rejection produces.
+   Rule this out first: `curl https://<primary-url>/api/v1/health` must return
+   `{"success":true,"message":"OK","data":null}`. If it does not, no `CLIENT_URL`
+   value can help.
 
 ### Backend environment variables
 
@@ -218,7 +228,7 @@ This is why the deploy now **fails fast** instead of booting into that state.
 
 **Verify the backend:**
 ```sh
-curl https://acc-app-api.onrender.com/api/v1/health
+curl https://acc-app-api-0bon.onrender.com/api/v1/health
 # -> {"success":true,"message":"OK","data":null}
 ```
 
@@ -242,7 +252,7 @@ curl https://acc-app-api.onrender.com/api/v1/health
    [`client/vercel.json`](../client/vercel.json) supplies these plus the SPA rewrite.
 3. **No environment variable is required** — the repo tracks
    [`client/.env.production`](../client/.env.production) with
-   `VITE_API_URL=https://acc-app-api.onrender.com/api/v1`, which Vite loads
+   `VITE_API_URL=https://acc-app-api-0bon.onrender.com/api/v1`, which Vite loads
    automatically for a production build. This file holds only the **public API
    base URL** (no secrets), so it is safe to commit.
 4. *(Optional override)* To point the deployment at a **different** API, add a
@@ -335,7 +345,7 @@ misconfiguration; assert the preflight directly:
 
 ```sh
 npm run verify:deploy -- \
-  --api-url=https://acc-app-api.onrender.com \
+  --api-url=https://acc-app-api-0bon.onrender.com \
   --client-url=https://dukan-app-sable.vercel.app
 ```
 
@@ -448,6 +458,7 @@ Notes:
 | First request slow (~40s) | Render free tier cold start | Expected; upgrade instance or keep it warm |
 | Email button disabled | SMTP not configured | Set the `SMTP_*` + `MAIL_FROM` vars (step 5) |
 | Could not send email (502) | Bad SMTP creds / blocked port | Re-check SMTP user/password; many hosts block 587 outbound on free tiers — try an API-based provider |
+| Login says **"Can't reach the API at https://… — the request got no reply"** *and the Render log shows no `[cors]` warning* | **`VITE_API_URL` points at the wrong host** — a Render service name that was already taken gets a suffix (`acc-app-api` → `acc-app-api-0bon`), so the frontend calls a host that is not this API. That also yields no reply, and it is **not** a CORS fault: the absence of `[cors] Blocked origin` in the log proves the allowlist is fine | Read `==> Available at your primary URL https://…` from the Render deploy log and set `VITE_API_URL` to exactly `<that-host>/api/v1` in [`client/.env.production`](../client/.env.production) (or a Vercel Production env var), then **redeploy Vercel** — Vite inlines the value at build time. Confirm `curl <that-host>/api/v1/health` returns `{"success":true,"message":"OK","data":null}`. Do **not** chase `CLIENT_URL` for this symptom |
 
 ---
 
