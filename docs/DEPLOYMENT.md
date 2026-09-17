@@ -249,7 +249,10 @@ curl https://acc-app-api.onrender.com/api/v1/health
    Vercel **Environment Variable** (Production) `VITE_API_URL`, e.g. for a custom
    domain (`https://api.yourdomain.com/api/v1`). A real environment variable
    overrides the committed file (see step 6). Include the `/api/v1` suffix.
-5. Deploy. Copy the production URL, e.g. `https://dukan-sigma.vercel.app`.
+5. Deploy. Copy the **production** URL from Vercel → Project → Settings →
+   Domains, e.g. `https://dukan-app-sable.vercel.app`. Do **not** copy a
+   per-deployment preview URL (see step 4.3) — use the stable production domain
+   so the origin does not change on every deploy.
 
 > **The build fails fast if `VITE_API_URL` is missing.** [`client/vite.config.js`](../client/vite.config.js:1)
 > aborts a `production` build when no value is found from either the committed
@@ -275,25 +278,30 @@ The API allows only the origins listed in `CLIENT_URL`
 cookies, so the value must be an exact origin — never `*`, which browsers reject
 for credentialed requests.
 
-1. In Render, set `CLIENT_URL` and `SHARE_LINK_BASE_URL` to the Vercel URL
-   from step 3 (e.g. `https://dukan-sigma.vercel.app`, no trailing slash).
+1. In Render, set `CLIENT_URL` and `SHARE_LINK_BASE_URL` to the Vercel origin
+   from step 3 (e.g. `https://dukan-app-sable.vercel.app`, no trailing slash).
    Copy it from the browser address bar — a typo, a trailing slash, or the
-   wrong project name (e.g. `dukan-app-nine` vs `dukan-sigma`) is the single
+   wrong project name (e.g. `dukan-sigma` vs `dukan-app-sable`) is the single
    most common cause of the "got no reply" login failure.
 2. Redeploy the Render service (env changes take effect on the next deploy).
-3. **Vercel URLs change between deployments.** Each Vercel deploy can be
-   reachable on a *different* hostname (e.g. `dukan-app-nine.vercel.app` today,
-   `dukan-sigma.vercel.app` tomorrow). Because CORS matches the origin exactly,
-   a `CLIENT_URL` that named yesterday's hostname rejects today's. Fix this
-   permanently by either:
-   - assigning a **stable production domain** in Vercel (Settings → Domains)
-     and using that single value, or
+3. **Vercel URLs change between deployments — this is the trap.** Every Vercel
+   deploy is reachable on its *own* auto-generated hostname, and they change
+   unpredictably (`dukan-app-nine` → `dukan-sigma` → `dukan-app-sable` → …).
+   These look like production URLs but are per-deployment preview URLs. Because
+   CORS matches the origin **exactly**, a `CLIENT_URL` that named yesterday's
+   hostname rejects today's, and login fails with "got no reply". Chasing the
+   URL forever does not work. Fix it permanently by either:
+   - assigning a **stable production domain** in Vercel (Settings → Domains —
+     a custom domain, or the project's canonical `<project>.vercel.app`) and
+     using that single value so the origin stops changing, **or**
    - listing **every** hostname you use, **comma-separated**, in one
      `CLIENT_URL` — [`parseAllowedOrigins()`](../server/src/app.js:14) accepts a
-     comma-separated allowlist, so preview and production origins can coexist:
+     comma-separated allowlist, so several origins can coexist:
      ```
-     https://dukan-sigma.vercel.app,https://dukan-app-nine.vercel.app
+     https://dukan-app-sable.vercel.app,https://dukan-sigma.vercel.app,https://dukan-app-nine.vercel.app
      ```
+     Each new hostname still needs a one-line edit + redeploy, but a stale value
+     is no longer fatal.
 4. If a later deploy changes the Vercel URL, update these and redeploy.
 
 **Why this is load-bearing.** `POST /api/v1/auth/login` sends JSON, which is not
@@ -309,9 +317,9 @@ Accepted forms (all normalised by `parseAllowedOrigins()` in
 
 | `CLIENT_URL` value | Result |
 |---|---|
-| `https://dukan-sigma.vercel.app` | allowed |
-| `https://dukan-sigma.vercel.app/` | allowed — trailing slash stripped |
-| `https://dukan-sigma.vercel.app,https://dukan-app-nine.vercel.app` | both allowed (comma-separated) — use this when Vercel hands out more than one hostname |
+| `https://dukan-app-sable.vercel.app` | allowed |
+| `https://dukan-app-sable.vercel.app/` | allowed — trailing slash stripped |
+| `https://dukan-app-sable.vercel.app,https://dukan-sigma.vercel.app,https://dukan-app-nine.vercel.app` | all allowed (comma-separated) — use this when Vercel hands out more than one hostname |
 | *unset* (local dev) | falls back to `http://localhost:5173` and logs a `[cors]` warning — intended for `npm run dev` |
 | *unset* (deployed) | **the deploy fails fast** (`Exited with status 1`): the process refuses to boot without `CLIENT_URL`, instead of turning on with a green health check and broken logins |
 
@@ -319,7 +327,7 @@ The API warns in the deploy log whenever it blocks an origin, naming the value t
 set:
 
 ```
-[cors] Blocked origin https://dukan-sigma.vercel.app. Allowed: http://localhost:5173. ...
+[cors] Blocked origin https://dukan-app-sable.vercel.app. Allowed: http://localhost:5173. ...
 ```
 
 **Verify it, don't assume it.** The health check cannot catch a CORS
@@ -328,7 +336,7 @@ misconfiguration; assert the preflight directly:
 ```sh
 npm run verify:deploy -- \
   --api-url=https://acc-app-api.onrender.com \
-  --client-url=https://dukan-sigma.vercel.app
+  --client-url=https://dukan-app-sable.vercel.app
 ```
 
 The `CORS allows <origin>` check must pass, and should report `credentials
